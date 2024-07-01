@@ -70,13 +70,15 @@ def chunk_all():
 def tokenize_stories(stories_dir, tokenized_stories_dir):
     """Maps a whole directory of .story files to a tokenized version using Stanford CoreNLP Tokenizer"""
     print("Preparing to tokenize %s to %s..." % (stories_dir, tokenized_stories_dir))
+    classpath = os.path.join("~", "stanford-corenlp-4.5.7", "*")
+    print(f"USING CLASSPATH {classpath}")
     stories = os.listdir(stories_dir)
     # make IO list file
     print("Making list of files to tokenize...")
     with open("mapping.txt", "w") as f:
         for s in stories:
             f.write("%s \t %s\n" % (os.path.join(stories_dir, s), os.path.join(tokenized_stories_dir, s)))
-    command = ['java', 'edu.stanford.nlp.process.PTBTokenizer', '-ioFileList', '-preserveLines', 'mapping.txt']
+    command = ['java', "-cp", classpath, 'edu.stanford.nlp.process.PTBTokenizer', '-ioFileList', '-preserveLines', 'mapping.txt']
     print("Tokenizing %i files in %s and saving in %s..." % (len(stories), stories_dir, tokenized_stories_dir))
     subprocess.call(command)
     print("Stanford CoreNLP Tokenizer has finished.")
