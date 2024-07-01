@@ -1,3 +1,0 @@
-"""
-Training code for model
-"""
