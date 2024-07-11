@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals, print_function, division
@@ -32,12 +33,18 @@ class Train(object):
         train_dir = os.path.join(config.log_root, 'train_%d' % (int(time.time())))
         if not os.path.exists(train_dir):
             os.mkdir(train_dir)
+        print(f"Using train dir {train_dir}")
 
+            
         self.model_dir = os.path.join(train_dir, 'models')
         if not os.path.exists(self.model_dir):
             os.mkdir(self.model_dir)
 
-        self.summary_writer = tf.summary.FileWriter(train_dir)
+        print(f"Using models dir {self.model_dir}")
+
+        
+
+        self.summary_writer = tf.summary.create_file_writer(train_dir)
 
     def save_model(self, running_avg_loss, iter):
         state = {
@@ -49,6 +56,7 @@ class Train(object):
             'current_loss': running_avg_loss
         }
         model_save_path = os.path.join(self.model_dir, 'model_%d_%d' % (iter, int(time.time())))
+        print(f"Saving model to {model_save_path}")
         torch.save(state, model_save_path)
 
     def setup_train(self, model_path=None):
