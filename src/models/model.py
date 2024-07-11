@@ -7,7 +7,7 @@ from numpy import random
 from models.layers import Encoder
 from models.layers import Decoder
 from models.layers import ReduceState
-from transformer.model import TranEncoder
+# from transformer.model import TranEncoder
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
