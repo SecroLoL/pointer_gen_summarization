@@ -155,7 +155,8 @@ def calc_running_avg_loss(loss, running_avg_loss, summary_writer, step, decay=0.
     running_avg_loss = min(running_avg_loss, 12)  # clip
     
     with summary_writer.as_default():
-        tf.summary.scalar('running_avg_loss/deacy=%.2f' % decay, running_avg_loss, step=step)
+        tf.summary.scalar('running_avg_loss/decay=%.2f' % decay, running_avg_loss, step=step)
+
     return running_avg_loss
 
 

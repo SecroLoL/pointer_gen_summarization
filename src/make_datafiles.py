@@ -67,11 +67,12 @@ def chunk_all():
     print("Saved chunked data in %s" % chunks_dir)
 
 
-def tokenize_stories(stories_dir, tokenized_stories_dir):
+def tokenize_stories(stories_dir, tokenized_stories_dir, classpath="/Users/alexshan/Desktop/stanford-corenlp-4.5.7/*"):
     """Maps a whole directory of .story files to a tokenized version using Stanford CoreNLP Tokenizer"""
+
+    # make sure you have the tokenizer installed via corenlp already
     print("Preparing to tokenize %s to %s..." % (stories_dir, tokenized_stories_dir))
-    classpath = os.path.join("~", "stanford-corenlp-4.5.7", "*")
-    print(f"USING CLASSPATH {classpath}")
+    print(f"USING CLASSPATH {classpath} {os.path.exists(classpath[: -1])}")
     stories = os.listdir(stories_dir)
     # make IO list file
     print("Making list of files to tokenize...")

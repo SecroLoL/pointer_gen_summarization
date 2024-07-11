@@ -1,0 +1,10 @@
+# DS Store
+../.DS_Store
+
+# Data
+cnn_stories_tokenized.zip
+dm_stories_tokenized.zip
+.DS_Store
+dataset.zip
+dataset/
+

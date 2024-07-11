@@ -7,6 +7,7 @@ import time
 import queue
 import struct
 import numpy as np
+import logging
 import tensorflow as tf
 from random import shuffle
 from threading import Thread
@@ -357,7 +358,6 @@ class Batcher(object):
                 logging.error('Failed to get article or abstract from example')
                 continue
             if len(article_text) == 0:  # See https://github.com/abisee/pointer-generator/issues/1
-                logging.warning('Found an example with empty article text. Skipping it.')
                 continue
             else:
                 yield (article_text, abstract_text)
