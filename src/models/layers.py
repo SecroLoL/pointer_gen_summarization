@@ -16,6 +16,7 @@ class Encoder(BasicModule):
         super(Encoder, self).__init__()
         # TODO would have to edit to use custom embeddings
         self.src_word_emb = nn.Embedding(config.vocab_size, config.emb_dim)
+        # TODO This dim has to change too!
         self.lstm = nn.LSTM(config.emb_dim, config.hidden_dim, batch_first=True, bidirectional=True)
         self.fc = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2, bias=False)
 

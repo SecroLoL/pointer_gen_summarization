@@ -83,6 +83,10 @@ class Train(object):
         return start_iter, start_loss
 
     def train_one_batch(self, batch):
+        """
+        Trains the model on one batch of examples
+        
+        """
         # TODO: here we also need to include the words so that we can get the charlm embeddings
         # This comes from the `get_input_from_batch()` function in the utils file.
         enc_batch, enc_lens, enc_pos, enc_padding_mask, enc_batch_extend_vocab, \
@@ -92,13 +96,16 @@ class Train(object):
 
         self.optimizer.zero_grad()
 
+        # Get the output of the Encoder (Shape of (Batch size, seq len, input size))
         if not config.tran:
             enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_lens)
         else:
             enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_pos)
 
+        # Linear reduction of the Encoder as input to the Decoder as the initial state
         s_t = self.model.reduce_state(enc_h)
 
+        # Decoder steps
         step_losses, cove_losses = [], []
         for di in range(min(max_dec_len, config.max_dec_steps)):
             y_t = dec_batch[:, di]  # Teacher forcing

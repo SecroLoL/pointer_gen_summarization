@@ -32,8 +32,23 @@ EOS_TOKEN = '[EOS]'  # This has a vocab id, which is used at the end of untrunca
 
 
 class Vocab(object):
+    """
+    TODO
 
+    We have two ways of going about this. 
+    1. We can either use the existing code and add a layer on top that loads 
+    the .pt embedding file, converts it into a file that is compatible with this class Constructor, and then simply
+    use the existing class Constructor. (NOTE this layer would skip over any <PAD> token in the Vocab)
+
+    2. We can add a new method to load directly from a raw .pt embedding file.
+
+    As of now, I think the first approach is easier to implement, albeit probably less efficient in terms of runtime.
+    NOTE even if we do the first approach, we still need to have a way to load the embeddings anyways in the model.
+    """
     def __init__(self, file, max_size):
+        """
+        Vocab class constructor given a file that has one word per line, where each line has the format "<word> <id>"
+        """
         self.word2idx = {}
         self.idx2word = {}
         self.count = 0     # keeps track of total number of words in the Vocab
@@ -86,6 +101,7 @@ class Vocab(object):
             for i in range(self.size()):
                 writer.writerow({"word": self.idx2word[i]})
 
+
 class Example(object):
     # TODO this is where we would add tokens for use in the charlm embeddings 
     # Batches are made up of examples
@@ -129,6 +145,10 @@ class Example(object):
         self.original_article = article
         self.original_abstract = abstract
         self.original_abstract_sents = abstract_sentences
+
+        # TODO 
+        # Generate CLM embeddings 
+        # self.clm_embeddings = self.create_clm_embeddings(article, clm_model)
 
     def get_dec_seq(self, sequence, max_len, start_id, stop_id):
         src = [start_id] + sequence[:]
@@ -221,11 +241,15 @@ class Batch(object):
         self.original_abstracts = [ex.original_abstract for ex in example_list]  # list of lists
         self.original_abstracts_sents = [ex.original_abstract_sents for ex in example_list]  # list of list of lists
 
+    def init_clm_embeddings(self, example_list):
+        # TODO Implement this function!
+        self.clm_embeddings = [ex.clm_embeddings for ex in example_list]
+        raise ValueError("Function not implemented yet")
 
 class Batcher(object):
     BATCH_QUEUE_MAX = 100  # max number of batches the batch_queue can hold
 
-    def __init__(self, vocab, data_path, batch_size, single_pass, mode):
+    def __init__(self, vocab, data_path, batch_size, single_pass, mode):  # TODO add the clm model as an argument 
         self._vocab = vocab
         self._data_path = data_path
         self.batch_size = batch_size
@@ -298,7 +322,7 @@ class Batcher(object):
 
             abstract_sentences = [sent.strip() for sent in utils.abstract2sents(
                 abstract)]  # Use the <s> and </s> tags in abstract to get a list of sentences.
-            example = Example(article, abstract_sentences, self._vocab)
+            example = Example(article, abstract_sentences, self._vocab)  # TODO add the CLM model here
             self._example_queue.put(example)
 
     def fill_batch_queue(self):
