@@ -302,6 +302,7 @@ class Batcher(object):
             self._example_queue.put(example)
 
     def fill_batch_queue(self):
+        # TODO This is where you get a Batch object from
         while True:
             if self.mode == 'decode':
                 # beam search decode mode single example repeated in the batch

@@ -84,6 +84,7 @@ class Train(object):
 
     def train_one_batch(self, batch):
         # TODO: here we also need to include the words so that we can get the charlm embeddings
+        # This comes from the `get_input_from_batch()` function in the utils file.
         enc_batch, enc_lens, enc_pos, enc_padding_mask, enc_batch_extend_vocab, \
         extra_zeros, c_t, coverage = get_input_from_batch(batch, use_cuda)
         dec_batch, dec_lens, dec_pos, dec_padding_mask, max_dec_len, tgt_batch = \

@@ -22,9 +22,9 @@ class Model(object):
         encoder = Encoder()
         decoder = Decoder()
         reduce_state = ReduceState()
-        if is_tran:
-            encoder = TranEncoder(config.vocab_size, config.max_enc_steps, config.emb_dim,
-                 config.n_layers, config.n_head, config.d_k, config.d_v, config.d_model, config.d_inner)
+        # if is_tran:
+        #     encoder = TranEncoder(config.vocab_size, config.max_enc_steps, config.emb_dim,
+        #          config.n_layers, config.n_head, config.d_k, config.d_v, config.d_model, config.d_inner)
 
         # shared the embedding between encoder and decoder
         decoder.tgt_word_emb.weight = encoder.src_word_emb.weight

@@ -192,6 +192,7 @@ def write_for_rouge(reference_sents, decoded_words, ex_index,
 
 def get_input_from_batch(batch, use_cuda):
     # TODO: add the text too here, we need text in order to collect charlm embeddings
+    # HOWEVER, maybe we could also just have the charlm embeddings in the batch object anyways
     extra_zeros = None
     enc_lens = batch.enc_lens
     max_enc_len = np.max(enc_lens)
