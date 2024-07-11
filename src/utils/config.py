@@ -44,14 +44,14 @@ max_iterations = 500000
 d_k = 64
 d_v = 64
 n_head = 6
-tran = True
+tran = False
 dropout = 0.1
 n_layers = 6
 d_model = 128
 d_inner = 512
 n_warmup_steps = 4000
 
-root_dir = os.path.expanduser("./")
+root_dir = "/u/nlp/data/cnn_dm_2/"
 log_root = os.path.join(root_dir, "dataset/log/")
 
 #train_data_path = os.path.join(root_dir, "pointer_generator/dataset/finished_files/train.bin")
