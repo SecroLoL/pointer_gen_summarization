@@ -25,12 +25,14 @@ class Evaluate(object):
         self.batcher = Batcher(config.eval_data_path, self.vocab, mode='eval',
                                batch_size=config.batch_size, single_pass=True)
         time.sleep(15)
+        print(f"Evaluating model from path {model_path}")
         model_name = os.path.basename(model_path)
 
         eval_dir = os.path.join(config.log_root, 'eval_%s' % (model_name))
         if not os.path.exists(eval_dir):
             os.mkdir(eval_dir)
-        self.summary_writer = tf.summary.FileWriter(eval_dir)
+        self.summary_writer = tf.summary.create_file_writer(eval_dir)
+        print(f"Using eval dir {eval_dir}")
 
         self.model = Model(model_path, is_eval=True)
 
