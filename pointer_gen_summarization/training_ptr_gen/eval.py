@@ -12,8 +12,8 @@ from data_util.batcher import Batcher
 from data_util.data import Vocab
 
 from data_util.utils import calc_running_avg_loss
-from train_util import get_input_from_batch, get_output_from_batch
-from model import Model
+from training_ptr_gen.train_util import get_input_from_batch, get_output_from_batch
+from training_ptr_gen.model import Model
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
