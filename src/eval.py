@@ -22,7 +22,7 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 class Evaluate(object):
     def __init__(self, model_path):
         self.vocab = Vocab(config.vocab_path, config.vocab_size)
-        self.batcher = Batcher(config.eval_data_path, self.vocab, mode='eval',
+        self.batcher = Batcher(data_path=config.eval_data_path, vocab=self.vocab, mode='eval',
                                batch_size=config.batch_size, single_pass=True)
         time.sleep(15)
         print(f"Evaluating model from path {model_path}")
@@ -37,9 +37,17 @@ class Evaluate(object):
         self.model = Model(model_path, is_eval=True)
 
     def eval_one_batch(self, batch):
-        enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t, coverage = \
+        """
+        enc_batch, enc_lens, enc_pos, enc_padding_mask, enc_batch_extend_vocab, \
+        extra_zeros, c_t, coverage = get_input_from_batch(batch, use_cuda)
+
+        enc_batch, enc_lens, enc_pos, enc_padding_mask, enc_batch_extend_vocab, extra_zeros, c_t, coverage
+
+        dec_batch, dec_lens, dec_pos, dec_padding_mask, max_dec_len, tgt_batch
+        """
+        enc_batch, enc_lens, enc_pos, enc_padding_mask, enc_batch_extend_vocab, extra_zeros, c_t, coverage = \
             get_input_from_batch(batch, use_cuda)
-        dec_batch, dec_padding_mask, max_dec_len, dec_lens_var, tgt_batch = \
+        dec_batch, dec_lens, dec_pos, dec_padding_mask, max_dec_len, tgt_batch = \
             get_output_from_batch(batch, use_cuda)
 
         enc_out, enc_fea, enc_h = self.model.encoder(enc_batch, enc_lens)
@@ -64,7 +72,7 @@ class Evaluate(object):
             step_losses.append(step_loss)
 
         sum_step_losses = torch.sum(torch.stack(step_losses, 1), 1)
-        batch_avg_loss = sum_step_losses / dec_lens_var
+        batch_avg_loss = sum_step_losses / dec_lens
         loss = torch.mean(batch_avg_loss)
 
         return loss.data[0]
