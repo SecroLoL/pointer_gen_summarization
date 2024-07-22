@@ -3,6 +3,9 @@ from __future__ import unicode_literals, print_function, division
 import os
 import time
 import argparse
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 import tensorflow as tf
 import torch
