@@ -21,20 +21,27 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Train(object):
     def __init__(self):
+        print(f"creating vocab with path {config.vocab_path} and size {config.vocab_size}")
         self.vocab = Vocab(config.vocab_path, config.vocab_size)
         self.batcher = Batcher(config.train_data_path, self.vocab, mode='train',
                                batch_size=config.batch_size, single_pass=False)
+        
+        print(f"Loading batches using training data from {config.train_data_path}")
         time.sleep(15)
 
         train_dir = os.path.join(config.log_root, 'train_%d' % (int(time.time())))
         if not os.path.exists(train_dir):
             os.mkdir(train_dir)
 
+        print(f"Using train dir {train_dir}")
+
         self.model_dir = os.path.join(train_dir, 'model')
         if not os.path.exists(self.model_dir):
             os.mkdir(self.model_dir)
 
-        self.summary_writer = tf.summary.FileWriter(train_dir)
+        print(f"Using model_dir {self.model_dir}")
+
+        self.summary_writer = tf.summary.create_file_writer(train_dir)
 
     def save_model(self, running_avg_loss, iter):
         state = {
@@ -46,6 +53,7 @@ class Train(object):
             'current_loss': running_avg_loss
         }
         model_save_path = os.path.join(self.model_dir, 'model_%d_%d' % (iter, int(time.time())))
+        print(f"Saving model to {model_save_path}")
         torch.save(state, model_save_path)
 
     def setup_train(self, model_file_path=None):

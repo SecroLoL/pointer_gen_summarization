@@ -54,10 +54,14 @@ def calc_running_avg_loss(loss, running_avg_loss, summary_writer, step, decay=0.
   else:
     running_avg_loss = running_avg_loss * decay + (1 - decay) * loss
   running_avg_loss = min(running_avg_loss, 12)  # clip
-  loss_sum = tf.Summary()
-  tag_name = 'running_avg_loss/decay=%f' % (decay)
-  loss_sum.value.add(tag=tag_name, simple_value=running_avg_loss)
-  summary_writer.add_summary(loss_sum, step)
+
+  with summary_writer.as_default():
+    tf.summary.scalar('running_avg_loss/decay=%.2f' % decay, running_avg_loss, step=step)
+
+  # loss_sum = tf.Summary()
+  # tag_name = 'running_avg_loss/decay=%f' % (decay)
+  # loss_sum.value.add(tag=tag_name, simple_value=running_avg_loss)
+  # summary_writer.add_summary(loss_sum, step)
   return running_avg_loss
 
 
