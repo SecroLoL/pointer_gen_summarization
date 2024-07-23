@@ -18,7 +18,7 @@ vocab_path = os.path.join(root_dir, "dataset/finished_files/vocab")
 # Hyperparameters
 hidden_dim= 256
 emb_dim= 128
-batch_size= 8
+batch_size= 4
 max_enc_steps=400
 max_dec_steps=100
 beam_size=4

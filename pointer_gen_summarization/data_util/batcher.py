@@ -152,7 +152,7 @@ class Batch(object):
 
 
 class Batcher(object):
-  BATCH_QUEUE_MAX = 100 # max number of batches the batch_queue can hold
+  BATCH_QUEUE_MAX = 50 # max number of batches the batch_queue can hold
 
   def __init__(self, data_path, vocab, mode, batch_size, single_pass):
     self._data_path = data_path

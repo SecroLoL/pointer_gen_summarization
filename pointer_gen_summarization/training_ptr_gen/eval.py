@@ -1,6 +1,7 @@
 from __future__ import unicode_literals, print_function, division
 
 import os
+import logging
 import time
 import sys
 
@@ -19,7 +20,10 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Evaluate(object):
     def __init__(self, model_file_path):
+        print(f"Creating evaluator for model in path {model_file_path}")
+        print(f"Vocab Path {config.vocab_path}")
         self.vocab = Vocab(config.vocab_path, config.vocab_size)
+        print(f"Eval data path : {config.eval_data_path}")
         self.batcher = Batcher(config.eval_data_path, self.vocab, mode='eval',
                                batch_size=config.batch_size, single_pass=True)
         time.sleep(15)
@@ -28,6 +32,8 @@ class Evaluate(object):
         eval_dir = os.path.join(config.log_root, 'eval_%s' % (model_name))
         if not os.path.exists(eval_dir):
             os.mkdir(eval_dir)
+
+        print(f"Eval dir {eval_dir}")
         self.summary_writer = tf.summary.create_file_writer(eval_dir)
 
         self.model = Model(model_file_path, is_eval=True)
