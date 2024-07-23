@@ -13,9 +13,11 @@ def print_results(article, abstract, decoded_output):
 
 
 def make_html_safe(s):
-  s.replace("<", "&lt;")
-  s.replace(">", "&gt;")
-  return s
+    if isinstance(s, bytes):
+        s = s.decode('utf-8')
+    s = s.replace("<", "&lt;").replace(">", "&gt;")
+    return s
+
 
 
 def rouge_eval(ref_dir, dec_dir):
