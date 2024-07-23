@@ -3,9 +3,6 @@
 from __future__ import unicode_literals, print_function, division
 
 import sys
-import importlib
-importlib.reload(sys)
-sys.setdefaultencoding('utf8')
 
 import os
 import time
