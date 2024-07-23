@@ -75,7 +75,9 @@ class Evaluate(object):
         running_avg_loss, iter = 0, 0
         start = time.time()
         batch = self.batcher.next_batch()
+        count = 0
         while batch is not None:
+            count += 1
             loss = self.eval_one_batch(batch)
 
             running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
@@ -89,6 +91,8 @@ class Evaluate(object):
                 iter, print_interval, time.time() - start, running_avg_loss))
                 start = time.time()
             batch = self.batcher.next_batch()
+        
+        print(f"Finished running eval on {count} batches.")
 
 
 if __name__ == '__main__':

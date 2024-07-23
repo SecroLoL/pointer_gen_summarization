@@ -49,6 +49,7 @@ class Beam(object):
 
 class BeamSearch(object):
     def __init__(self, model_file_path):
+        print(f"creating beam searcher for model {model_file_path}")
         model_name = os.path.basename(model_file_path)
         self._decode_dir = os.path.join(config.log_root, 'decode_%s' % (model_name))
         self._rouge_ref_dir = os.path.join(self._decode_dir, 'rouge_ref')
@@ -57,9 +58,14 @@ class BeamSearch(object):
             if not os.path.exists(p):
                 os.mkdir(p)
 
+        print(f"Decode dir: {self._decode_dir}")
+        print(f"ROUGE REF DIR: {self._rouge_ref_dir}")
+
         self.vocab = Vocab(config.vocab_path, config.vocab_size)
+        print(f"Vocab from {config.vocab_path}")
         self.batcher = Batcher(config.decode_data_path, self.vocab, mode='decode',
                                batch_size=config.beam_size, single_pass=True)
+        print(f"Data from {config.decode_data_path}")
         time.sleep(15)
 
         self.model = Model(model_file_path, is_eval=True)
