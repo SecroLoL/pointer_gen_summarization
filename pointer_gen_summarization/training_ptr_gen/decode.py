@@ -207,6 +207,6 @@ class BeamSearch(object):
 if __name__ == '__main__':
     model_filename = sys.argv[1]
     beam_Search_processor = BeamSearch(model_filename)
-    beam_Search_processor.decode(finished_decoding=True)
+    beam_Search_processor.decode()
 
 
