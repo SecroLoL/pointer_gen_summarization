@@ -212,8 +212,10 @@ class Batcher(object):
         (article, abstract) = input_gen.__next__() # read the next example from file. article and abstract are both strings.
       except StopIteration: # if there are no more examples:
         logger.info("The example generator for this example queue filling thread has exhausted data.")
+        print("The example generator for this example queue filling thread has exhausted data.")
         if self._single_pass:
           logger.info("single_pass mode is on, so we've finished reading dataset. This thread is stopping.")
+          print("single_pass mode is on, so we've finished reading dataset. This thread is stopping.")
           self._finished_reading = True
           break
         else:

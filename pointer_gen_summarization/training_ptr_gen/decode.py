@@ -74,38 +74,40 @@ class BeamSearch(object):
     def decode(self):
         start = time.time()
         counter = 0
-        batch = self.batcher.next_batch()
-        while batch is not None:
-            # Run beam search to get best Hypothesis
-            best_summary = self.beam_search(batch)
-
-            # Extract the output ids from the hypothesis and convert back to words
-            output_ids = [int(t) for t in best_summary.tokens[1:]]
-            decoded_words = data.outputids2words(output_ids, self.vocab,
-                                                 (batch.art_oovs[0] if config.pointer_gen else None))
-
-            # Remove the [STOP] token from decoded_words, if necessary
-            try:
-                fst_stop_idx = decoded_words.index(data.STOP_DECODING)
-                decoded_words = decoded_words[:fst_stop_idx]
-            except ValueError:
-                decoded_words = decoded_words
-
-            original_abstract_sents = batch.original_abstracts_sents[0]
-
-            write_for_rouge(original_abstract_sents, decoded_words, counter,
-                            self._rouge_ref_dir, self._rouge_dec_dir)
-            counter += 1
-            if counter % 1000 == 0:
-                print('%d example in %d sec'%(counter, time.time() - start))
-                start = time.time()
-
+        try:
             batch = self.batcher.next_batch()
+            while batch is not None:
+                # Run beam search to get best Hypothesis
+                best_summary = self.beam_search(batch)
 
-        print("Decoder has finished reading dataset for single_pass.")
-        print("Now starting ROUGE eval...")
-        results_dict = rouge_eval(self._rouge_ref_dir, self._rouge_dec_dir)
-        rouge_log(results_dict, self._decode_dir)
+                # Extract the output ids from the hypothesis and convert back to words
+                output_ids = [int(t) for t in best_summary.tokens[1:]]
+                decoded_words = data.outputids2words(output_ids, self.vocab,
+                                                    (batch.art_oovs[0] if config.pointer_gen else None))
+
+                # Remove the [STOP] token from decoded_words, if necessary
+                try:
+                    fst_stop_idx = decoded_words.index(data.STOP_DECODING)
+                    decoded_words = decoded_words[:fst_stop_idx]
+                except ValueError:
+                    decoded_words = decoded_words
+
+                original_abstract_sents = batch.original_abstracts_sents[0]
+
+                write_for_rouge(original_abstract_sents, decoded_words, counter,
+                                self._rouge_ref_dir, self._rouge_dec_dir)
+                counter += 1
+                if counter % 1000 == 0:
+                    print('%d example in %d sec'%(counter, time.time() - start))
+                    start = time.time()
+
+                batch = self.batcher.next_batch()
+        except StopIteration:
+
+            print("Decoder has finished reading dataset for single_pass.")
+            print("Now starting ROUGE eval...")
+            results_dict = rouge_eval(self._rouge_ref_dir, self._rouge_dec_dir)
+            rouge_log(results_dict, self._decode_dir)
 
 
     def beam_search(self, batch):
