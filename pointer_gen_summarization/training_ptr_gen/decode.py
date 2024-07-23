@@ -71,11 +71,11 @@ class BeamSearch(object):
         return sorted(beams, key=lambda h: h.avg_log_prob, reverse=True)
 
 
-    def decode(self):
+    def decode(self, finished_decoding: bool = False):
         start = time.time()
         counter = 0
-        try:
-            batch = self.batcher.next_batch()
+        batch = self.batcher.next_batch()
+        if not finished_decoding:
             while batch is not None:
                 # Run beam search to get best Hypothesis
                 best_summary = self.beam_search(batch)
@@ -102,12 +102,11 @@ class BeamSearch(object):
                     start = time.time()
 
                 batch = self.batcher.next_batch()
-        except StopIteration:
 
-            print("Decoder has finished reading dataset for single_pass.")
-            print("Now starting ROUGE eval...")
-            results_dict = rouge_eval(self._rouge_ref_dir, self._rouge_dec_dir)
-            rouge_log(results_dict, self._decode_dir)
+        print("Decoder has finished reading dataset for single_pass.")
+        print("Now starting ROUGE eval...")
+        results_dict = rouge_eval(self._rouge_ref_dir, self._rouge_dec_dir)
+        rouge_log(results_dict, self._decode_dir)
 
 
     def beam_search(self, batch):
@@ -208,6 +207,6 @@ class BeamSearch(object):
 if __name__ == '__main__':
     model_filename = sys.argv[1]
     beam_Search_processor = BeamSearch(model_filename)
-    beam_Search_processor.decode()
+    beam_Search_processor.decode(finished_decoding=True)
 
 
