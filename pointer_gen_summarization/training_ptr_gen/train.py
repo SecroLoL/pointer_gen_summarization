@@ -60,15 +60,17 @@ class Train(object):
         torch.save(state, model_save_path)
 
     def setup_train(self, model_file_path=None):
+        print(f"Executing setup train with {model_file_path}")
         self.model = Model(model_file_path)
 
         params = list(self.model.encoder.parameters()) + list(self.model.decoder.parameters()) + \
                  list(self.model.reduce_state.parameters())
         initial_lr = config.lr_coverage if config.is_coverage else config.lr
         self.optimizer = Adagrad(params, lr=initial_lr, initial_accumulator_value=config.adagrad_init_acc)
-
+        print("Created model and optimizer")
         start_iter, start_loss = 0, 0
 
+        print(f"Loading training data from last run.")
         if model_file_path is not None:
             state = torch.load(model_file_path, map_location= lambda storage, location: storage)
             start_iter = state['iter']
@@ -81,6 +83,7 @@ class Train(object):
                         for k, v in state.items():
                             if torch.is_tensor(v):
                                 state[k] = v.cuda()
+        print(f"Starting on iter: {start_iter} with loss {start_loss}")
 
         return start_iter, start_loss
 
@@ -129,8 +132,11 @@ class Train(object):
         return loss.item()
 
     def trainIters(self, n_iters, model_file_path=None):
+        print(f"Beginning training with model from {model_file_path}")
         iter, running_avg_loss = self.setup_train(model_file_path)
         start = time.time()
+
+        print(f"Finished training setup. Beginning train: iter {iter}/{n_iters}")
         while iter < n_iters:
             batch = self.batcher.next_batch()
             loss = self.train_one_batch(batch)
