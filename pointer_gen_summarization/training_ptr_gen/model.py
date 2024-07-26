@@ -199,6 +199,8 @@ class Decoder(nn.Module):
 
 class Model(object):
     def __init__(self, model_file_path=None, is_eval=False):
+
+        print(f"Creating model with coverage set to {config.is_coverage}")
         encoder = Encoder()
         decoder = Decoder()
         reduce_state = ReduceState()
