@@ -67,10 +67,8 @@ class Train(object):
                  list(self.model.reduce_state.parameters())
         initial_lr = config.lr_coverage if config.is_coverage else config.lr
         self.optimizer = Adagrad(params, lr=initial_lr, initial_accumulator_value=config.adagrad_init_acc)
-        print("Created model and optimizer")
         start_iter, start_loss = 0, 0
 
-        print(f"Loading training data from last run.")
         if model_file_path is not None:
             state = torch.load(model_file_path, map_location= lambda storage, location: storage)
             start_iter = state['iter']
@@ -83,7 +81,7 @@ class Train(object):
                         for k, v in state.items():
                             if torch.is_tensor(v):
                                 state[k] = v.cuda()
-        print(f"Starting on iter: {start_iter} with loss {start_loss}")
+        print(f"Starting on iter #: {start_iter} with loss {start_loss}.")
 
         return start_iter, start_loss
 
@@ -132,18 +130,28 @@ class Train(object):
         return loss.item()
 
     def trainIters(self, n_iters, model_file_path=None):
-        print(f"Beginning training with model from {model_file_path}")
+        SAVE_EVERY = 5000  # save model every N iterations
+        """
+        Trains model for n_iters, loading model from `model_file_path` if provided.
+        """
+        if model_file_path is not None and not os.path.exists(model_file_path):
+            raise FileNotFoundError(f"Model file path provided ({model_file_path}) could not be found. Aborting.")
+        if model_file_path is None:
+            print("Beginning model training from scratch.")
+        else:
+            print(f"Beginning training with model from {model_file_path}")
         iter, running_avg_loss = self.setup_train(model_file_path)
         start = time.time()
 
-        print(f"Finished training setup. Beginning train: iter {iter}/{n_iters}")
+        print(f"Finished training setup. Beginning train: iteration {iter} / {n_iters}")
         while iter < n_iters:
-            batch = self.batcher.next_batch()
+            batch = self.batcher.next_batch()  # load the next training batch
             loss = self.train_one_batch(batch)
 
             running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
             iter += 1
 
+            # Log training progress
             if iter % 100 == 0:
                 self.summary_writer.flush()
             print_interval = 1000
@@ -151,8 +159,9 @@ class Train(object):
                 print('steps %d, seconds for %d batch: %.2f , loss: %f' % (iter, print_interval,
                                                                            time.time() - start, loss))
                 start = time.time()
-            if iter % 5000 == 0:
+            if iter % SAVE_EVERY == 0:   # save model every 5000 iters
                 self.save_model(running_avg_loss, iter)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train script")
