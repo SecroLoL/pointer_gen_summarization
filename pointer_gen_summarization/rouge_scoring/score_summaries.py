@@ -3,6 +3,7 @@ Code for scoring quality of summaries produced by model vs reference summaries
 """
 
 import argparse
+import os 
 from rouge_score import rouge_scorer
 import glob
 
@@ -34,6 +35,17 @@ def main(generated_dir, reference_dir):
         print(f"Evaluating {gen_file} against {ref_file}\n")
         generated_summary = read_file(gen_file)
         reference_summary = read_file(ref_file)
+
+        generated_file_base, ref_file_base = os.path.basename(gen_file), os.path.basename(ref_file)
+        generated_base_prefix, ref_base_prefix = generated_file_base.split("_")[0], ref_file_base.split("_")[0]
+        assert generated_base_prefix == ref_base_prefix, f"Generated file: {generated_base_prefix} | Ref file {ref_base_prefix}"
+
+        if not generated_summary:
+            print(f"Generated summary for {gen_file} not found. Skipping...")
+            continue
+        if not reference_summary:
+            print(f"Reference summary for {ref_file} not found. Skipping...")
+            continue
         scores = calculate_rouge_scores(generated_summary, reference_summary)
         all_scores.append(scores)
     
