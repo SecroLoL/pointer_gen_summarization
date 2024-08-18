@@ -5,6 +5,7 @@ import random
 import struct
 import csv
 from tensorflow.core.example import example_pb2
+from stanza.models.common.foundation_cache import load_pretrain
 
 # <s> and </s> are used in the data files to segment the abstracts into sentences. They don't receive vocab ids.
 SENTENCE_START = '<s>'
@@ -20,7 +21,14 @@ STOP_DECODING = '[STOP]' # This has a vocab id, which is used at the end of untr
 
 class Vocab(object):
 
-  def __init__(self, vocab_file, max_size):
+  def __init__(self, vocab_file, max_size, use_pt: bool, pt_vocab):
+    """
+    Vocab constructor.
+
+    A Vocab can be created with either a vocabulary file, where each line is a word separated from a number by a space.
+
+    Or, a PT vocab object can be provided as well.
+    """
     self._word_to_id = {}
     self._id_to_word = {}
     self._count = 0 # keeps track of total number of words in the Vocab
@@ -30,17 +38,11 @@ class Vocab(object):
       self._word_to_id[w] = self._count
       self._id_to_word[self._count] = w
       self._count += 1
-
-    # Read the vocab file and add words up to max_size
-    with open(vocab_file, 'r') as vocab_f:
-      for line in vocab_f:
-        pieces = line.split()
-        if len(pieces) != 2:
-          print(f"Warning: incorrectly formatted line in vocabulary file: {line}\n")
-          continue
-        w = pieces[0]
+    if use_pt:  # use PT vocab object to create vocab, not a vocab file
+      print(f"Attempting to create Vocab with a custom PT file")
+      for w in pt_vocab._unit2id:
         if w in [SENTENCE_START, SENTENCE_END, UNKNOWN_TOKEN, PAD_TOKEN, START_DECODING, STOP_DECODING]:
-          raise Exception('<s>, </s>, [UNK], [PAD], [START] and [STOP] shouldn\'t be in the vocab file, but %s is' % w)
+            raise Exception('<s>, </s>, [UNK], [PAD], [START] and [STOP] shouldn\'t be in the vocab file, but %s is' % w)
         if w in self._word_to_id:
           raise Exception('Duplicated word in vocabulary file: %s' % w)
         self._word_to_id[w] = self._count
@@ -49,6 +51,26 @@ class Vocab(object):
         if max_size != 0 and self._count >= max_size:
           print(f"max_size of vocab was specified as {max_size}; we now have {self._count} words. Stopping reading.")
           break
+    else:
+      print(f"Attempting to create vocab for file {vocab_file}. Not using PT file.")
+      # Read the vocab file and add words up to max_size
+      with open(vocab_file, 'r') as vocab_f:
+        for line in vocab_f:
+          pieces = line.split()
+          if len(pieces) != 2:
+            print(f"Warning: incorrectly formatted line in vocabulary file: {line}\n")
+            continue
+          w = pieces[0]
+          if w in [SENTENCE_START, SENTENCE_END, UNKNOWN_TOKEN, PAD_TOKEN, START_DECODING, STOP_DECODING]:
+            raise Exception('<s>, </s>, [UNK], [PAD], [START] and [STOP] shouldn\'t be in the vocab file, but %s is' % w)
+          if w in self._word_to_id:
+            raise Exception('Duplicated word in vocabulary file: %s' % w)
+          self._word_to_id[w] = self._count
+          self._id_to_word[self._count] = w
+          self._count += 1
+          if max_size != 0 and self._count >= max_size:
+            print(f"max_size of vocab was specified as {max_size}; we now have {self._count} words. Stopping reading.")
+            break
     
     print(f"Finished constructing vocabulary of {self._count} total words. Last word added: {self._id_to_word[self._count-1]}")
 
@@ -181,3 +203,42 @@ def show_abs_oovs(abstract, vocab, article_oovs):
       new_words.append(w)
   out_str = ' '.join(new_words)
   return out_str
+
+
+def load_custom_vocab(vocab_path: str) -> Vocab:
+  """
+  Creates a Vocab object from a vocab path that is a .pt file, so it contains more than just the lines and words.
+
+  Need to generate the vocab file mapping
+
+  Also need to ensure the embedding matrix lines up with that. 
+  The PT Embedding has a .vocab attribute that gives the (i, word) pairs for each vocab
+  The PT embedding also has a emb_matrix of shape (vocab size, emb dim) where each word has its embedding.
+  
+  So what we can do is to have the vocab file transferred from the vocab object. This gives us a file list of the words
+  we load that into the Vocab constructor. It will create the vocab object that is identical to the original one, but 
+  the indices will be shifted over by 4, since [0, 1, 2, 3] are all occupied. 
+
+  For the PT embedding, we can also load that into the pretrain, but then it has to be modified slightly because we need
+  custom embeddings for the first 4 words. We can simply extend the matrix to be (vocab size + 4, emb dim) in shape.
+  """
+
+  """
+  vocab_path (str): The path to the .pt vocab file
+  """
+
+  EXTRA_TOKENS = [UNKNOWN_TOKEN, PAD_TOKEN, START_DECODING, STOP_DECODING]
+
+  pt = load_pretrain(vocab_path)
+  pt_vocab = pt.vocab
+  vocab = Vocab(vocab_file="", 
+                max_size=len(pt.vocab) + len(EXTRA_TOKENS), 
+                use_pt=True, 
+                pt_vocab=pt_vocab)
+  return vocab
+
+
+if __name__ == "__main__":
+  load_custom_vocab(vocab_path="/Users/alexshan/Desktop/pointer_gen_summarization/pointer_gen_summarization/data_util/glove.pt")
+
+
