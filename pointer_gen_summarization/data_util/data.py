@@ -4,6 +4,9 @@ import glob
 import random
 import struct
 import csv
+import torch
+import torch.nn as nn
+from typing import List, Tuple, Mapping
 from tensorflow.core.example import example_pb2
 from stanza.models.common.foundation_cache import load_pretrain
 
@@ -205,7 +208,7 @@ def show_abs_oovs(abstract, vocab, article_oovs):
   return out_str
 
 
-def load_custom_vocab(vocab_path: str) -> Vocab:
+def load_custom_vocab(vocab_path: str) -> Tuple[Vocab, nn.Embedding]:
   """
   Creates a Vocab object from a vocab path that is a .pt file, so it contains more than just the lines and words.
 
@@ -225,6 +228,8 @@ def load_custom_vocab(vocab_path: str) -> Vocab:
 
   """
   vocab_path (str): The path to the .pt vocab file
+
+  Returns a tuple of (Vocab object, Embedding object) corresponding to the custom vocab object
   """
 
   EXTRA_TOKENS = [UNKNOWN_TOKEN, PAD_TOKEN, START_DECODING, STOP_DECODING]
@@ -235,7 +240,17 @@ def load_custom_vocab(vocab_path: str) -> Vocab:
                 max_size=len(pt.vocab) + len(EXTRA_TOKENS), 
                 use_pt=True, 
                 pt_vocab=pt_vocab)
-  return vocab
+  
+  emb_matrix = pt.emb  # (vocab size, emb dim)
+  emb_matrix = nn.Embedding.from_pretrained(torch.from_numpy(emb_matrix), freeze=True).weight.data  # get just the emb matrix weights
+
+  vocab_size, emb_dim = emb_matrix.shape   
+  # We need to extend the emb matrix at the front to account for the new tokens in EXTRA_TOKENS
+  extra_tokens_tensor = torch.zeros(len(EXTRA_TOKENS), emb_dim)  # embeddings for EXTRA_TOKENS
+  new_embedding_tensor = torch.cat((extra_tokens_tensor, emb_matrix), dim=0)  # now size (vocab_size + len(EXTRA_TOKENS), emb dim)
+  new_embedding = nn.Embedding(vocab_size + len(EXTRA_TOKENS), emb_dim)
+  new_embedding.weight.data = new_embedding_tensor  # transfer weights ove
+  return vocab, new_embedding
 
 
 if __name__ == "__main__":
