@@ -54,12 +54,9 @@ class Example(object):
       _, self.target = self.get_dec_inp_targ_seqs(abs_ids_extend_vocab, config.max_dec_steps, start_decoding, stop_decoding)
 
     # Store the original strings
-    self.original_article = article
-    self.original_abstract = abstract
-    self.original_abstract_sents = abstract_sentences
-
-    print(f"Original_abstract: {self.original_abstract}")
-    print(f"Original_abstract_sents: {self.original_abstract_sents}")
+    self.original_article = article  # str
+    self.original_abstract = abstract  # str
+    self.original_abstract_sents = abstract_sentences  # List[str]. One sentence per list item
 
 
   def get_dec_inp_targ_seqs(self, sequence, max_len, start_id, stop_id):
@@ -159,10 +156,12 @@ class Batch(object):
         self.dec_padding_mask[i][j] = 1
 
   def store_orig_strings(self, example_list):
-    self.original_articles = [ex.original_article for ex in example_list] # list of lists
-    self.original_abstracts = [ex.original_abstract for ex in example_list] # list of lists
-    self.original_abstracts_sents = [ex.original_abstract_sents for ex in example_list] # list of list of lists
+    self.original_articles = [ex.original_article for ex in example_list] # List[str]
+    self.original_abstracts = [ex.original_abstract for ex in example_list] # List[str]
+    self.original_abstracts_sents = [ex.original_abstract_sents for ex in example_list] # List[List[str]]
 
+    # char_reps_forward = self.charmodel_forward.build_char_representation(sentences)  # takes [[str]]
+    #         char_reps_backward = self.charmodel_backward.build_char_representation(sentences)
 
 class Batcher(object):
   BATCH_QUEUE_MAX = 50 # max number of batches the batch_queue can hold

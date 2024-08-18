@@ -42,6 +42,8 @@ def init_wt_unif(wt):
 class Encoder(nn.Module):
     def __init__(self):
         super(Encoder, self).__init__()
+        # we need to be able to load a custom word embedding 
+        # Maybe load in the word embedding matrix, and then configure a custom Vocab
         self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
         init_wt_normal(self.embedding.weight)
         
@@ -51,6 +53,7 @@ class Encoder(nn.Module):
         self.W_h = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2, bias=False)
 
     #seq_lens should be in descending order
+    # TODO: take the raw text of the article as input too, and generate charlm embeddings here as well
     def forward(self, input, seq_lens):
         embedded = self.embedding(input)
        

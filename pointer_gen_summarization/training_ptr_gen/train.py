@@ -95,7 +95,11 @@ class Train(object):
             get_output_from_batch(batch, use_cuda)
 
         self.optimizer.zero_grad()
-
+        
+        # enc batch is the tensor of shape (B, seq len) with the token IDs of the article
+        # TODO: we need to also pass the sentences into the encoder to generate charlm embeddings
+        # Using the article words themselves (remember, it takes [[str]]) so we need to split each article
+        # into words [["sent_1_word_1", "sent_1_word_2"], ["sent_2_word_1", ...], ...]
         encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens)
         s_t_1 = self.model.reduce_state(encoder_hidden)
 
