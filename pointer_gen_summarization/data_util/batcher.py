@@ -12,6 +12,7 @@ import tensorflow as tf
 import data_util.config as config
 import data_util.data as data
 
+from typing import List, Tuple, Mapping
 import random
 random.seed(1234)
 
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Example(object):
 
-  def __init__(self, article, abstract_sentences, vocab):
+  def __init__(self, article: str, abstract_sentences: List[str], vocab):
     # Get ids of special tokens
     start_decoding = vocab.word2id(data.START_DECODING)
     stop_decoding = vocab.word2id(data.STOP_DECODING)
@@ -57,6 +58,9 @@ class Example(object):
     self.original_abstract = abstract
     self.original_abstract_sents = abstract_sentences
 
+    print(f"Original_abstract: {self.original_abstract}")
+    print(f"Original_abstract_sents: {self.original_abstract_sents}")
+
 
   def get_dec_inp_targ_seqs(self, sequence, max_len, start_id, stop_id):
     inp = [start_id] + sequence[:]
@@ -87,6 +91,11 @@ class Example(object):
 
 class Batch(object):
   def __init__(self, example_list, vocab, batch_size):
+    """
+    Constructor for a Batch object from a list of examples.
+
+    Compiles the list of Example objects into a single Batch.
+    """
     self.batch_size = batch_size
     self.pad_id = vocab.word2id(data.PAD_TOKEN) # id of the PAD token used to pad sequences
     self.init_encoder_seq(example_list) # initialize the input to the encoder
@@ -95,22 +104,26 @@ class Batch(object):
 
 
   def init_encoder_seq(self, example_list):
-    # Determine the maximum length of the encoder input sequence in this batch
+    """
+    Creates input to the encoder
+    """
+    # Find the longest input seq in the batch for encoder
     max_enc_seq_len = max([ex.enc_len for ex in example_list])
 
-    # Pad the encoder input sequences up to the length of the longest sequence
+    # Pad all examples to make them uniform length
     for ex in example_list:
       ex.pad_encoder_input(max_enc_seq_len, self.pad_id)
 
-    # Initialize the numpy arrays
     # Note: our enc_batch can have different length (second dimension) for each batch because we use dynamic_rnn for the encoder.
-    self.enc_batch = np.zeros((self.batch_size, max_enc_seq_len), dtype=np.int32)
-    self.enc_lens = np.zeros((self.batch_size), dtype=np.int32)
-    self.enc_padding_mask = np.zeros((self.batch_size, max_enc_seq_len), dtype=np.float32)
+    # enc_batch is a tensor of shape (B, seq len) that contains the token ID for each token (word)
+    self.enc_batch = np.zeros((self.batch_size, max_enc_seq_len), dtype=np.int32)  
+    self.enc_lens = np.zeros((self.batch_size), dtype=np.int32)  # length of each example
+    self.enc_padding_mask = np.zeros((self.batch_size, max_enc_seq_len), dtype=np.float32)  # representing what is padded or not
 
     # Fill in the numpy arrays
     for i, ex in enumerate(example_list):
-      self.enc_batch[i, :] = ex.enc_input[:]
+      self.enc_batch[i, :] = ex.enc_input[:]  # for each example, fill in the batch with the token IDs
+      # ex.enc_input is the list of token IDs for each token in the input sequence
       self.enc_lens[i] = ex.enc_len
       for j in range(ex.enc_len):
         self.enc_padding_mask[i][j] = 1
