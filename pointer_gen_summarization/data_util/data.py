@@ -9,6 +9,7 @@ import torch.nn as nn
 from typing import List, Tuple, Mapping
 from tensorflow.core.example import example_pb2
 from stanza.models.common.foundation_cache import load_pretrain
+from pointer_gen_summarization.data_util import config
 
 # <s> and </s> are used in the data files to segment the abstracts into sentences. They don't receive vocab ids.
 SENTENCE_START = '<s>'
@@ -239,7 +240,7 @@ def load_custom_vocab(vocab_path: str) -> Tuple[Vocab, nn.Embedding]:
   pt = load_pretrain(vocab_path)
   pt_vocab = pt.vocab
   vocab = Vocab(vocab_file="", 
-                max_size=len(pt.vocab) + len(EXTRA_TOKENS), 
+                max_size=config.vocab_size,  # will read this many tokens from the vocab.
                 use_pt=True, 
                 pt_vocab=pt_vocab)
   
@@ -257,5 +258,3 @@ def load_custom_vocab(vocab_path: str) -> Tuple[Vocab, nn.Embedding]:
 
 if __name__ == "__main__":
   load_custom_vocab(vocab_path="/Users/alexshan/Desktop/pointer_gen_summarization/pointer_gen_summarization/data_util/glove.pt")
-
-
