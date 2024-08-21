@@ -9,7 +9,7 @@ import torch.nn as nn
 from typing import List, Tuple, Mapping
 from tensorflow.core.example import example_pb2
 from stanza.models.common.foundation_cache import load_pretrain
-from pointer_gen_summarization.data_util import config
+from data_util import config
 
 # <s> and </s> are used in the data files to segment the abstracts into sentences. They don't receive vocab ids.
 SENTENCE_START = '<s>'
