@@ -33,10 +33,14 @@ class Example(object):
     self.enc_len = len(article_words) # store the length after truncation but before padding
     self.enc_input = [vocab.word2id(w) for w in article_words] # list of word ids; OOVs are represented by the id for UNK token
 
+    print(f"Encoder input: {self.enc_input}")
+
     # Process the abstract
     abstract = ' '.encode().join(abstract_sentences).decode() # string
     abstract_words = abstract.split() # list of strings
     abs_ids = [vocab.word2id(w) for w in abstract_words] # list of word ids; OOVs are represented by the id for UNK token
+
+    print(f"Abstract IDs: {abs_ids}")
 
     # Get the decoder input sequence and target sequence
     self.dec_input, self.target = self.get_dec_inp_targ_seqs(abs_ids, config.max_dec_steps, start_decoding, stop_decoding)
