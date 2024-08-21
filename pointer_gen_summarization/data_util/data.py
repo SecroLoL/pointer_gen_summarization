@@ -232,6 +232,8 @@ def load_custom_vocab(vocab_path: str) -> Tuple[Vocab, nn.Embedding]:
   Returns a tuple of (Vocab object, Embedding object) corresponding to the custom vocab object
   """
 
+  print(f"Loading a custom Vocab object with the PT path {vocab_path}")
+
   EXTRA_TOKENS = [UNKNOWN_TOKEN, PAD_TOKEN, START_DECODING, STOP_DECODING]
 
   pt = load_pretrain(vocab_path)

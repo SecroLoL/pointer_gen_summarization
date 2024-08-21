@@ -11,28 +11,33 @@ import tensorflow as tf
 import torch
 from model import Model
 from torch.nn.utils import clip_grad_norm_
-
 from torch.optim import Adagrad
 
 from data_util import config
 from data_util.batcher import Batcher
-from data_util.data import Vocab
+from data_util.data import Vocab, load_custom_vocab
 from data_util.utils import calc_running_avg_loss
 from training_ptr_gen.train_util import get_input_from_batch, get_output_from_batch
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Train(object):
-    def __init__(self):
-        print(f"creating vocab with path {config.vocab_path} and size {config.vocab_size}")
-        self.vocab = Vocab(config.vocab_path, config.vocab_size)
-        self.batcher = Batcher(config.train_data_path, self.vocab, mode='train',
+    def __init__(self, custom_vocab_path: str = ""):
+        print(f"creating vocab with path {custom_vocab_path if os.path.exists(custom_vocab_path) else config.VOCAB_PATH} and size {config.vocab_size}")
+
+        if custom_vocab_path:
+            custom_vocab, custom_emb = load_custom_vocab(vocab_path=custom_vocab_path)
+            self.vocab = custom_vocab
+        else:  # use default vocab list
+            self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
+
+        self.batcher = Batcher(config.TRAIN_DATA_PATH, self.vocab, mode='train',
                                batch_size=config.batch_size, single_pass=False)
         
-        print(f"Loading batches using training data from {config.train_data_path}")
+        print(f"Loading batches using training data from {config.TRAIN_DATA_PATH}")
         time.sleep(15)
 
-        train_dir = os.path.join(config.log_root, 'train_%d' % (int(time.time())))
+        train_dir = os.path.join(config.LOG_ROOT, 'train_%d' % (int(time.time())))
         if not os.path.exists(train_dir):
             os.mkdir(train_dir)
 
@@ -172,12 +177,19 @@ class Train(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train script")
-    parser.add_argument("-m",
+    parser.add_argument("--m",
                         dest="model_file_path", 
                         required=False,
                         default=None,
                         help="Model file for retraining (default: None).")
+    
+    parser.add_argument("--custom_vocab_path",
+                        dest="custom_vocab_path",
+                        required=False,
+                        default="",
+                        help="Optional custom vocab path to a PT file containing a custom vocabulary.")
+
     args = parser.parse_args()
     
-    train_processor = Train()
+    train_processor = Train(custom_vocab_path=args.custom_vocab_path)
     train_processor.trainIters(config.max_iterations, args.model_file_path)

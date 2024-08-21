@@ -21,15 +21,15 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 class Evaluate(object):
     def __init__(self, model_file_path):
         print(f"Creating evaluator for model in path {model_file_path}")
-        print(f"Vocab Path {config.vocab_path}")
-        self.vocab = Vocab(config.vocab_path, config.vocab_size)
-        print(f"Eval data path : {config.eval_data_path}")
-        self.batcher = Batcher(config.eval_data_path, self.vocab, mode='eval',
+        print(f"Vocab Path {config.VOCAB_PATH}")
+        self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
+        print(f"Eval data path : {config.EVAL_DATA_PATH}")
+        self.batcher = Batcher(config.EVAL_DATA_PATH, self.vocab, mode='eval',
                                batch_size=config.batch_size, single_pass=True)
         time.sleep(15)
         model_name = os.path.basename(model_file_path)
 
-        eval_dir = os.path.join(config.log_root, 'eval_%s' % (model_name))
+        eval_dir = os.path.join(config.LOG_ROOT, 'eval_%s' % (model_name))
         if not os.path.exists(eval_dir):
             os.mkdir(eval_dir)
 

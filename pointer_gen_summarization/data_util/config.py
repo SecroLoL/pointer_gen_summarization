@@ -1,12 +1,13 @@
 import os
 
-# root_dir = os.path.expanduser("~")
-root_dir = "/u/nlp/data/cnn_dm_2/"
-log_root = os.path.join(root_dir, "dataset/log/")
-train_data_path = os.path.join(root_dir, "dataset/finished_files/chunked/train_*")
-eval_data_path = os.path.join(root_dir, "dataset/finished_files/val.bin")
-decode_data_path = os.path.join(root_dir, "dataset/finished_files/test.bin")
-vocab_path = os.path.join(root_dir, "dataset/finished_files/vocab")
+ROOT_DIR = "/u/nlp/data/cnn_dm_2/"  # where all information is contained
+LOG_ROOT = os.path.join(ROOT_DIR, "dataset/log/")  # where all log data for training jobs will be contained, e.g. model checkpoints, evaluation results, and decoding outputs.
+TRAIN_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/chunked/train_*")  # path to chunked training data
+EVAL_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/val.bin")
+DECODE_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/test.bin")
+VOCAB_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/vocab")  # default vocab path
+
+CUSTOM_VOCAB_PATH = "/Users/alexshan/Desktop/pointer_gen_summarization/pointer_gen_summarization/data_util/glove.pt"
 
 # train_data_path = os.path.join(root_dir, "ptr_nw/cnn-dailymail-master/finished_files/train.bin")
 # train_data_path = os.path.join(root_dir, "ptr_nw/cnn-dailymail-master/finished_files/chunked/train_*")
@@ -23,7 +24,7 @@ max_enc_steps=400
 max_dec_steps=100
 beam_size=4
 min_dec_steps=35
-vocab_size=50000
+vocab_size=100000
 
 lr=0.15
 adagrad_init_acc=0.1
