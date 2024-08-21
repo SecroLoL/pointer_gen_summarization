@@ -116,8 +116,6 @@ class Train(object):
                                                         extra_zeros, enc_batch_extend_vocab,
                                                                            coverage, di)
             target = target_batch[:, di]
-            print(f"final dist: {final_dist} with shape {final_dist.shape}")
-            print(f"Target: {target} with shape {target.shape}")
             gold_probs = torch.gather(final_dist, 1, target.unsqueeze(1)).squeeze()
             step_loss = -torch.log(gold_probs + config.eps)
             if config.is_coverage:
@@ -160,12 +158,6 @@ class Train(object):
         print(f"Finished training setup. Beginning train: iteration {iter} / {n_iters}")
         while iter < n_iters:
             batch = self.batcher.next_batch()  # load the next training batch
-
-            print(f"Batch: {batch}. Info about this batch."
-                  f"PAD ID {batch.pad_id}. batch size {batch.batch_size}"
-                  f"\nenc batch: {batch.enc_batch}, shape: {batch.enc_batch.shape}"
-                  f"")
-
             loss = self.train_one_batch(batch)
 
             running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
