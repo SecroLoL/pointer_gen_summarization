@@ -163,7 +163,7 @@ class Train(object):
 
             print(f"Batch: {batch}. Info about this batch."
                   f"PAD ID {batch.pad_id}. batch size {batch.batch_size}"
-                  f"\nenc batch: {self.enc_batch}, shape: {self.enc_batch.shape}"
+                  f"\nenc batch: {batch.enc_batch}, shape: {batch.enc_batch.shape}"
                   f"")
 
             loss = self.train_one_batch(batch)
