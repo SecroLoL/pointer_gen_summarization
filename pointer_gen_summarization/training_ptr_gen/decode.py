@@ -3,7 +3,7 @@
 from __future__ import unicode_literals, print_function, division
 
 import sys
-
+import argparse
 import os
 import time
 
@@ -11,7 +11,7 @@ import torch
 from torch.autograd import Variable
 
 from data_util.batcher import Batcher
-from data_util.data import Vocab
+from data_util.data import Vocab, load_custom_vocab
 from data_util import data, config
 from training_ptr_gen.model import Model
 from data_util.utils import write_for_rouge, rouge_eval, rouge_log
@@ -45,7 +45,7 @@ class Beam(object):
 
 
 class BeamSearch(object):
-    def __init__(self, model_file_path):
+    def __init__(self, model_file_path, custom_vocab_path):
         print(f"creating beam searcher for model {model_file_path}")
         model_name = os.path.basename(model_file_path)
         self._decode_dir = os.path.join(config.LOG_ROOT, 'decode_%s' % (model_name))
@@ -57,9 +57,12 @@ class BeamSearch(object):
 
         print(f"Decode dir: {self._decode_dir}")
         print(f"ROUGE REF DIR: {self._rouge_ref_dir}")
-
-        self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
-        print(f"Vocab from {config.VOCAB_PATH}")
+        print(f"creating vocab with path {custom_vocab_path if os.path.exists(custom_vocab_path) else config.VOCAB_PATH} and size {config.vocab_size}")
+        if custom_vocab_path:
+            custom_vocab, custom_emb = load_custom_vocab(vocab_path=custom_vocab_path)
+            self.vocab = custom_vocab
+        else:  # use default vocab list
+            self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
         self.batcher = Batcher(config.DECODE_DATA_PATH, self.vocab, mode='decode',
                                batch_size=config.beam_size, single_pass=True)
         print(f"Data from {config.DECODE_DATA_PATH}")
@@ -205,8 +208,25 @@ class BeamSearch(object):
         return beams_sorted[0]
 
 if __name__ == '__main__':
-    model_filename = sys.argv[1]
-    beam_Search_processor = BeamSearch(model_filename)
+    parser = argparse.ArgumentParser(description="Evaluation script")
+    parser.add_argument("--m",
+                        dest="model_file_path", 
+                        required=False,
+                        default=None,
+                        help="Model file for retraining (default: None).")
+    
+    parser.add_argument("--custom_vocab_path",
+                        dest="custom_vocab_path",
+                        required=False,
+                        default="",
+                        help="Optional custom vocab path to a PT file containing a custom vocabulary.")
+
+    args = parser.parse_args()
+
+    model_filename = args.model_file_path
+    custom_vocab_path = args.custom_vocab_path
+
+    beam_Search_processor = BeamSearch(model_filename, custom_vocab_path)
     beam_Search_processor.decode()
 
 

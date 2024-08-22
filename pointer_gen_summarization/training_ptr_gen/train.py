@@ -24,7 +24,6 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 class Train(object):
     def __init__(self, custom_vocab_path: str = ""):
         print(f"creating vocab with path {custom_vocab_path if os.path.exists(custom_vocab_path) else config.VOCAB_PATH} and size {config.vocab_size}")
-
         if custom_vocab_path:
             custom_vocab, custom_emb = load_custom_vocab(vocab_path=custom_vocab_path)
             self.vocab = custom_vocab
