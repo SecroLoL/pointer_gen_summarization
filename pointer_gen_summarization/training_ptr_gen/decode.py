@@ -226,6 +226,7 @@ if __name__ == '__main__':
     model_filename = args.model_file_path
     custom_vocab_path = args.custom_vocab_path
 
+    print(f"running beam search decoding on model from path {model_filename}")
     beam_Search_processor = BeamSearch(model_filename, custom_vocab_path)
     beam_Search_processor.decode()
 

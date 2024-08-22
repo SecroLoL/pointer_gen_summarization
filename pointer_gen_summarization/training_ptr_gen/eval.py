@@ -120,5 +120,7 @@ if __name__ == '__main__':
 
     model_filename = args.model_file_path
     custom_vocab_path = args.custom_vocab_path
+
+    print(f"Running eval on model {model_filename}...")
     eval_processor = Evaluate(model_filename, custom_vocab_path)
     eval_processor.run_eval()
