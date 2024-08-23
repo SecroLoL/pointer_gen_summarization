@@ -245,7 +245,6 @@ def load_custom_vocab(vocab_path: str) -> Tuple[Vocab, nn.Embedding]:
                 pt_vocab=pt_vocab)
   
   emb_matrix = pt.emb  # (vocab size, emb dim)
-  # emb_matrix = nn.Embedding.from_pretrained(torch.from_numpy(emb_matrix), freeze=True).weight.data  # get just the emb matrix weights
   # we may need to truncate the embedding matrix if certain words are getting pushed out of the vocab size limits. This will make room for the extra tokens, and ensure that all embeddings are synced to their updated indices in the vocab.
   emb_matrix = nn.Embedding.from_pretrained(torch.from_numpy(emb_matrix), freeze=True).weight.data[: config.vocab_size-len(EXTRA_TOKENS), :]  # get just the emb matrix weights for the tokens that we will actually be using (truncating to make room for EXTRA tokens if needed)
   vocab_size, emb_dim = emb_matrix.shape   
@@ -253,9 +252,10 @@ def load_custom_vocab(vocab_path: str) -> Tuple[Vocab, nn.Embedding]:
   extra_tokens_tensor = torch.zeros(len(EXTRA_TOKENS), emb_dim)  # embeddings for EXTRA_TOKENS
   new_embedding_tensor = torch.cat((extra_tokens_tensor, emb_matrix), dim=0)  # now size (vocab_size + len(EXTRA_TOKENS), emb dim)
   new_embedding = nn.Embedding(vocab_size + len(EXTRA_TOKENS), emb_dim)
-  new_embedding.weight.data = new_embedding_tensor  # transfer weights ove
+  new_embedding.weight.data = new_embedding_tensor  # transfer weights over
   return vocab, new_embedding
 
 
 if __name__ == "__main__":
-  load_custom_vocab(vocab_path="/Users/alexshan/Desktop/pointer_gen_summarization/pointer_gen_summarization/data_util/glove.pt")
+  vocab, embedding = load_custom_vocab(vocab_path="/Users/alexshan/Desktop/pointer_gen_summarization/pointer_gen_summarization/data_util/glove.pt")
+ 
