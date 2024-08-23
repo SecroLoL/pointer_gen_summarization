@@ -164,7 +164,7 @@ class Batch(object):
     #         char_reps_backward = self.charmodel_backward.build_char_representation(sentences)
 
 class Batcher(object):
-  BATCH_QUEUE_MAX = 50 # max number of batches the batch_queue can hold
+  BATCH_QUEUE_MAX = 25 # max number of batches the batch_queue can hold
 
   def __init__(self, data_path, vocab, mode, batch_size, single_pass):
     self._data_path = data_path
