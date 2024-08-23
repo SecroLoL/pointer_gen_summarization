@@ -54,7 +54,7 @@ class Encoder(nn.Module):
         self.W_h = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2, bias=False)
 
         print(f"Successfully initialized Encoder. Used custom word embedding? ({custom_word_embedding})\n"
-              f"Shape of embedding layer weights: {self.embedding.weight.data}.")
+              f"Shape of embedding layer weights: {self.embedding.weight.data.shape}.")
 
     #seq_lens should be in descending order
     # TODO: take the raw text of the article as input too, and generate charlm embeddings here as well
@@ -157,7 +157,7 @@ class Decoder(nn.Module):
         init_linear_wt(self.out2)
 
         print(f"Successfully initialized Decoder. Used custom word embedding? ({custom_word_embedding}).\n"
-              f"Shape of embedding layer weights: {self.embedding.weight.data}.")
+              f"Shape of embedding layer weights: {self.embedding.weight.data.shape}.")
 
     def forward(self, y_t_1, s_t_1, encoder_outputs, encoder_feature, enc_padding_mask,
                 c_t_1, extra_zeros, enc_batch_extend_vocab, coverage, step):
