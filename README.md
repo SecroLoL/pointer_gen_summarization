@@ -1,5 +1,5 @@
 # Summarization with Pointer Generator Networks
-Python3 PyTorch implementation and [stanfordnlp/stanza]([url](https://github.com/stanfordnlp/stanza)) of Pointer-Generator Networks for Abstractive Summarization by See et. al.
+Python3 PyTorch implementation and [stanfordnlp/stanza]([https://github.com/stanfordnlp/stanza]) of Pointer-Generator Networks for Abstractive Summarization by See et. al.
 
 Integration with Stanza, Stanford NLP's open-source library for many human languages. Load your own custom embeddings and use our Character Language Model embeddings for this task! 
 
