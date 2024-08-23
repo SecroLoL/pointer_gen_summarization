@@ -57,18 +57,35 @@ class BeamSearch(object):
 
         print(f"Decode dir: {self._decode_dir}")
         print(f"ROUGE REF DIR: {self._rouge_ref_dir}")
-        print(f"creating vocab with path {custom_vocab_path if os.path.exists(custom_vocab_path) else config.VOCAB_PATH} and size {config.vocab_size}")
-        if custom_vocab_path:
+
+        self.use_custom_vocab = os.path.exists(custom_vocab_path)
+        self.custom_word_embedding = None  # by default, use standard embeddings
+        if self.use_custom_vocab:
+            print(f"Creating custom Vocab with path {custom_vocab_path} and size {config.vocab_size}.")
+        else:
+            print(f"Using base Vocab from path {config.VOCAB_PATH} and size {config.vocab_size}.")
+
+        if self.use_custom_vocab:
             custom_vocab, custom_emb = load_custom_vocab(vocab_path=custom_vocab_path)
+            print(f"Using custom word embeddings taken from path {custom_vocab_path}.")
+            self.custom_word_embedding = custom_emb
             self.vocab = custom_vocab
         else:  # use default vocab list
             self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
+
         self.batcher = Batcher(config.DECODE_DATA_PATH, self.vocab, mode='decode',
                                batch_size=config.beam_size, single_pass=True)
         print(f"Data from {config.DECODE_DATA_PATH}")
         time.sleep(15)
 
-        self.model = Model(model_file_path, is_eval=True)
+        if self.use_custom_vocab and self.custom_word_embedding is None or self.custom_word_embedding is not None and not self.custom_word_embedding:
+            raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
+                            f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
+
+        self.model = Model(model_file_path, 
+                           is_eval=True,
+                           custom_word_embedding=self.custom_word_embedding)
+
 
     def sort_beams(self, beams):
         return sorted(beams, key=lambda h: h.avg_log_prob, reverse=True)

@@ -40,17 +40,21 @@ def init_wt_unif(wt):
     wt.data.uniform_(-config.rand_unif_init_mag, config.rand_unif_init_mag)
 
 class Encoder(nn.Module):
-    def __init__(self):
+    def __init__(self, custom_word_embedding: nn.Embedding = None):
         super(Encoder, self).__init__()
-        # we need to be able to load a custom word embedding 
-        # Maybe load in the word embedding matrix, and then configure a custom Vocab
-        self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
+        if custom_word_embedding is not None:
+            self.embedding = custom_word_embedding
+        else:
+            self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
         init_wt_normal(self.embedding.weight)
         
         self.lstm = nn.LSTM(config.emb_dim, config.hidden_dim, num_layers=1, batch_first=True, bidirectional=True)
         init_lstm_wt(self.lstm)
 
         self.W_h = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2, bias=False)
+
+        print(f"Successfully initialized Encoder. Used custom word embedding? ({custom_word_embedding})\n"
+              f"Shape of embedding layer weights: {self.embedding.weight.data}.")
 
     #seq_lens should be in descending order
     # TODO: take the raw text of the article as input too, and generate charlm embeddings here as well
@@ -129,11 +133,14 @@ class Attention(nn.Module):
         return c_t, attn_dist, coverage
 
 class Decoder(nn.Module):
-    def __init__(self):
+    def __init__(self, custom_word_embedding: nn.Embedding = None):
         super(Decoder, self).__init__()
         self.attention_network = Attention()
         # decoder
-        self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
+        if custom_word_embedding is not None:
+            self.embedding = custom_word_embedding
+        else:
+            self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
         init_wt_normal(self.embedding.weight)
 
         self.x_context = nn.Linear(config.hidden_dim * 2 + config.emb_dim, config.emb_dim)
@@ -148,6 +155,9 @@ class Decoder(nn.Module):
         self.out1 = nn.Linear(config.hidden_dim * 3, config.hidden_dim)
         self.out2 = nn.Linear(config.hidden_dim, config.vocab_size)
         init_linear_wt(self.out2)
+
+        print(f"Successfully initialized Decoder. Used custom word embedding? ({custom_word_embedding}).\n"
+              f"Shape of embedding layer weights: {self.embedding.weight.data}.")
 
     def forward(self, y_t_1, s_t_1, encoder_outputs, encoder_feature, enc_padding_mask,
                 c_t_1, extra_zeros, enc_batch_extend_vocab, coverage, step):
@@ -201,11 +211,12 @@ class Decoder(nn.Module):
         return final_dist, s_t, c_t, attn_dist, p_gen, coverage
 
 class Model(object):
-    def __init__(self, model_file_path=None, is_eval=False):
+    def __init__(self, model_file_path=None, is_eval=False, custom_word_embedding: nn.Embedding = None):
 
-        print(f"Creating model with coverage set to {config.is_coverage}")
-        encoder = Encoder()
-        decoder = Decoder()
+        print(f"Creating model with coverage set to {config.is_coverage} and "
+              f"custom word embeddings set to {custom_word_embedding is not None}")
+        encoder = Encoder(custom_word_embedding=custom_word_embedding)
+        decoder = Decoder(custom_word_embedding=custom_word_embedding)
         reduce_state = ReduceState()
 
         # shared the embedding between encoder and decoder
