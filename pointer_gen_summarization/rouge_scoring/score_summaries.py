@@ -3,9 +3,10 @@ Code for scoring quality of summaries produced by model vs reference summaries
 """
 
 import argparse
+import glob
 import os 
 from rouge_score import rouge_scorer
-import glob
+
 
 def read_file(file_path):
     with open(file_path, 'r') as file:

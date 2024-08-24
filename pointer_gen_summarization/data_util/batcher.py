@@ -3,17 +3,14 @@
 import queue
 import logging 
 import time
-from random import shuffle
-from threading import Thread
-
+import random
 import numpy as np
 import tensorflow as tf
-
+from threading import Thread
+from typing import List, Tuple, Mapping
 import data_util.config as config
 import data_util.data as data
 
-from typing import List, Tuple, Mapping
-import random
 random.seed(1234)
 
 logger = logging.getLogger(__name__)
@@ -256,7 +253,7 @@ class Batcher(object):
         for i in range(0, len(inputs), self.batch_size):
           batches.append(inputs[i:i + self.batch_size])
         if not self._single_pass:
-          shuffle(batches)
+          random.shuffle(batches)
         for b in batches:  # each b is a list of Example objects
           self._batch_queue.put(Batch(b, self._vocab, self.batch_size))
 
