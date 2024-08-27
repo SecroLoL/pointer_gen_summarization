@@ -59,6 +59,8 @@ class Encoder(nn.Module):
     #seq_lens should be in descending order
     # TODO: take the raw text of the article as input too, and generate charlm embeddings here as well
     '''
+    https://github.com/stanfordnlp/stanza/blob/alex_lemmatizer_classifier/stanza/models/common/char_model.py#L145
+    line 183 
     def build_char_representation(self, sentences):
         """
         Return values from this charlm for a list of list of words
