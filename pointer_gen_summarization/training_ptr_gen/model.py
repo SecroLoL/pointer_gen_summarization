@@ -58,6 +58,20 @@ class Encoder(nn.Module):
 
     #seq_lens should be in descending order
     # TODO: take the raw text of the article as input too, and generate charlm embeddings here as well
+    '''
+    def build_char_representation(self, sentences):
+        """
+        Return values from this charlm for a list of list of words
+        input: [[str]]
+          K sentences, each of length Ki (can be different for each sentence)
+        output: [tensor(Ki x dim)]
+          list of tensors, each one with shape Ki by the dim of the character model
+        Values are taken from the last character in a word for each word.
+        The words are effectively treated as if they are whitespace separated
+        (which may actually be somewhat inaccurate for languages such as Chinese or for MWT)
+        """
+    '''
+
     def forward(self, input, seq_lens):
         embedded = self.embedding(input)
        
