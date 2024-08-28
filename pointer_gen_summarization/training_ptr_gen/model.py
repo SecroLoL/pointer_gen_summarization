@@ -75,6 +75,30 @@ class Encoder(nn.Module):
     '''
 
     def forward(self, input, seq_lens):
+        """
+        Args:
+            input: this is the enc_batch object that gets loaded from the get_input_from_batch() function.
+
+            the enc_batch object is defined as enc_batch = Variable(torch.from_numpy(batch.enc_batch).long())
+            for a specific batch.
+
+            From batcher.py:
+            # Note: our enc_batch can have different length (second dimension) for each batch because we use dynamic_rnn for the encoder.
+            # enc_batch is a tensor of shape (B, seq len) that contains the token ID for each token (word)
+            self.enc_batch = np.zeros((self.batch_size, max_enc_seq_len), dtype=np.int32)   
+
+            seq_lens: self.enc_lens = np.zeros((self.batch_size), dtype=np.int32)  # length of each example
+
+            So,
+
+            input is the enc_batch, which is the tensor of shape (Batch size, seq len) containing the token ID for each word
+            seq_lens is the length of each example.
+
+        TODO
+
+        What needs to be added here is the actual words themselves here so that the embeddings can be concatenated.
+        This should be passed in as raw text.
+        """
         embedded = self.embedding(input)
        
         packed = pack_padded_sequence(embedded, seq_lens, batch_first=True)
