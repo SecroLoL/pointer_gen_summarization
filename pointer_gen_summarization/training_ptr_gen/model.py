@@ -48,6 +48,7 @@ class Encoder(nn.Module):
             self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
         init_wt_normal(self.embedding.weight)
         
+        # TODO: Update this with the charlm embedding dim
         self.lstm = nn.LSTM(config.emb_dim, config.hidden_dim, num_layers=1, batch_first=True, bidirectional=True)
         init_lstm_wt(self.lstm)
 
@@ -97,11 +98,17 @@ class Encoder(nn.Module):
         TODO
 
         What needs to be added here is the actual words themselves here so that the embeddings can be concatenated.
-        This should be passed in as raw text.
+        This should be passed in as raw text. Then, we use the build_char_reps to get the embeddings. Finally, we should 
+        concatenate the embeddings before they are used. The encoder outputs will be size (B, seq len, emb dim + charmodel dim).
+
+        TODO
+        also now we must edit the input size to the reduce state module to accommodate the charmodel integration
         """
         embedded = self.embedding(input)
        
         packed = pack_padded_sequence(embedded, seq_lens, batch_first=True)
+
+        # TODO: edit LSTM to take in the new input size with charlm embeddings
         output, hidden = self.lstm(packed)
 
         encoder_outputs, _ = pad_packed_sequence(output, batch_first=True)  # h dim = B x t_k x n
@@ -122,7 +129,9 @@ class ReduceState(nn.Module):
         init_linear_wt(self.reduce_c)
 
     def forward(self, hidden):
-        h, c = hidden # h, c dim = 2 x b x hidden_dim
+        # https://chatgpt.com/share/70dcb9b6-9479-4b7b-a54e-93069a581d27
+        # 2 is the bidirectional, batch size is each example, and the hidden dim of the encoder LSTM. 
+        h, c = hidden # h, c dim = 2 x b x hidden_dim  TODO print this out to confirm that this is the case
         h_in = h.transpose(0, 1).contiguous().view(-1, config.hidden_dim * 2)
         hidden_reduced_h = F.relu(self.reduce_h(h_in))
         c_in = c.transpose(0, 1).contiguous().view(-1, config.hidden_dim * 2)
