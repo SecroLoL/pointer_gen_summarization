@@ -9,6 +9,20 @@ def get_input_from_batch(batch, use_cuda: bool):
   """
   batch_size = len(batch.enc_lens)
 
+  # TODO use this to implement charlm embeddings
+  """
+  batch.original_articles is a List[str], one string for each article in the batch.
+
+  make sure to check whether these original articles get truncated. Or else, we have to 
+  truncate it as well from article words. From batcher.py: `article_words = article.decode().split()`
+
+  So we can use the same thing and we would have the same word tokenization.
+  From there, we can truncate the articles to List[str] where each string is the truncated article in the batch.
+
+  Then, we include the truncated articles in the output of this function. From there, we load it into the
+  model encoder with the build_char_reps function.
+  """
+
   enc_batch = Variable(torch.from_numpy(batch.enc_batch).long())
   enc_padding_mask = Variable(torch.from_numpy(batch.enc_padding_mask)).float()
   enc_lens = batch.enc_lens
