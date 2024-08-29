@@ -61,9 +61,6 @@ def get_input_from_batch(batch, use_cuda: bool):
     art_words = art.decode().split()
     art_words = art_words[: config.max_enc_steps]
     truncated_articles.append(art_words)
-
-  print(f"Enc Batch Size: {enc_batch.size()}, Truncated articles length {len(truncated_articles)}")
-  print(f"Lengths of truncated articles {[len(t_art) for t_art in truncated_articles]}")
   return enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage, truncated_articles
 
 def get_output_from_batch(batch, use_cuda):

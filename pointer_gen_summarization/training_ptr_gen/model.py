@@ -123,7 +123,6 @@ class Encoder(nn.Module):
         The words are effectively treated as if they are whitespace separated
         """
         embedded = self.embedding(input)  # (B, seq len, emb dim)
-        print(f"Embedded shape: {embedded.shape}")
         # Get embeddings of the truncated articles and concatenate them to the word embeddings
         if self.use_charlm:
             char_reps_forward = self.charmodel_forward.build_char_representation(truncated_articles)  # takes [[str]]
@@ -131,12 +130,7 @@ class Encoder(nn.Module):
 
             char_reps_forward = pad_sequence(char_reps_forward, batch_first=True)
             char_reps_backward = pad_sequence(char_reps_backward, batch_first=True)
-
-            print(f"Char forward reps {char_reps_forward.shape}")
-            print(f"Char backward reps {char_reps_backward.shape}")
-            
-            embedded = torch.cat((embedded, char_reps_forward, char_reps_backward), 2)  
-            print(f"Concatenated embedding shape {embedded.shape}")
+            embedded = torch.cat((embedded, char_reps_forward, char_reps_backward), 2)   # shape (B, seq len, emb dim + 2*charlm dim)
 
        
         packed = pack_padded_sequence(embedded, seq_lens, batch_first=True)
