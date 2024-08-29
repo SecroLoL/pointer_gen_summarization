@@ -3,9 +3,11 @@ from __future__ import unicode_literals, print_function, division
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
 from data_util import config
 from numpy import random
+from stanza.models.common.char_model import CharacterModel, CharacterLanguageModel
+
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
@@ -40,16 +42,25 @@ def init_wt_unif(wt):
     wt.data.uniform_(-config.rand_unif_init_mag, config.rand_unif_init_mag)
 
 class Encoder(nn.Module):
-    def __init__(self, custom_word_embedding: nn.Embedding = None):
+    def __init__(self, custom_word_embedding: nn.Embedding = None, charlm_forward_file: str = None, charlm_backward_file: str = None):
         super(Encoder, self).__init__()
+        input_size = config.emb_dim
         if custom_word_embedding is not None:
             self.embedding = custom_word_embedding
         else:
             self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
         init_wt_normal(self.embedding.weight)
         
-        # TODO: Update this with the charlm embedding dim
-        self.lstm = nn.LSTM(config.emb_dim, config.hidden_dim, num_layers=1, batch_first=True, bidirectional=True)
+        self.use_charlm = charlm_forward_file is not None and charlm_backward_file is not None
+        if charlm_forward_file is not None:
+            self.charmodel_forward = CharacterLanguageModel.load(charlm_forward_file, finetune=False)
+            input_size += self.charmodel_forward.hidden_dim()
+
+        if charlm_backward_file is not None:
+            self.charmodel_backward = CharacterLanguageModel.load(charlm_backward_file, finetune=False)
+            input_size += self.charmodel_backward.hidden_dim()
+
+        self.lstm = nn.LSTM(input_size, config.hidden_dim, num_layers=1, batch_first=True, bidirectional=True)
         init_lstm_wt(self.lstm)
 
         self.W_h = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2, bias=False)
@@ -75,7 +86,7 @@ class Encoder(nn.Module):
         """
     '''
 
-    def forward(self, input, seq_lens):
+    def forward(self, input, seq_lens, truncated_articles):
         """
         Args:
             input: this is the enc_batch object that gets loaded from the get_input_from_batch() function.
@@ -104,11 +115,24 @@ class Encoder(nn.Module):
         TODO
         also now we must edit the input size to the reduce state module to accommodate the charmodel integration
         """
-        embedded = self.embedding(input)
+        embedded = self.embedding(input)  # (B, seq len, emb dim)
+        print(f"Embedded shape: {embedded.shape}")
+        # Get embeddings of the truncated articles and concatenate them to the word embeddings
+        if self.use_charlm:
+            char_reps_forward = self.charmodel_forward.build_char_representation(truncated_articles)  # takes [[str]]
+            char_reps_backward = self.charmodel_backward.build_char_representation(truncated_articles)
+
+            char_reps_forward = pad_sequence(char_reps_forward, batch_first=True)
+            char_reps_backward = pad_sequence(char_reps_backward, batch_first=True)
+
+            print(f"Char forward reps {char_reps_forward.shape}")
+            print(f"Char backward reps {char_reps_backward.shape}")
+            
+            embedded = torch.cat((embedded, char_reps_forward, char_reps_backward), 2)  
+            print(f"Concatenated embedding shape {embedded.shape}")
+
        
         packed = pack_padded_sequence(embedded, seq_lens, batch_first=True)
-
-        # TODO: edit LSTM to take in the new input size with charlm embeddings
         output, hidden = self.lstm(packed)
 
         encoder_outputs, _ = pad_packed_sequence(output, batch_first=True)  # h dim = B x t_k x n
@@ -260,11 +284,16 @@ class Decoder(nn.Module):
         return final_dist, s_t, c_t, attn_dist, p_gen, coverage
 
 class Model(object):
-    def __init__(self, model_file_path=None, is_eval=False, custom_word_embedding: nn.Embedding = None):
+    def __init__(self, model_file_path=None, is_eval=False, custom_word_embedding: nn.Embedding = None,
+                 charlm_forward_file: str = "", charlm_backward_file: str = ""):
 
         print(f"Creating model with coverage set to {config.is_coverage} and "
-              f"custom word embeddings set to {custom_word_embedding is not None}")
-        encoder = Encoder(custom_word_embedding=custom_word_embedding)
+              f"custom word embeddings set to {custom_word_embedding is not None} "
+              f"and charlm_forward_file set to {charlm_forward_file} "
+              f"and charlm_backward_file set to {charlm_backward_file}.")
+        encoder = Encoder(custom_word_embedding=custom_word_embedding,
+                          charlm_forward_file=charlm_forward_file,
+                          charlm_backward_file=charlm_backward_file)
         decoder = Decoder(custom_word_embedding=custom_word_embedding)
         reduce_state = ReduceState()
 
