@@ -22,7 +22,7 @@ from training_ptr_gen.train_util import get_input_from_batch, get_output_from_ba
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Train(object):
-    def __init__(self, custom_vocab_path: str = ""):
+    def __init__(self, custom_vocab_path: str = "", charlm_forward_file: str = "", charlm_backward_file: str = ""):
         self.use_custom_vocab = os.path.exists(custom_vocab_path)
         self.custom_word_embedding = None  # by default, use standard embeddings
         if self.use_custom_vocab:
@@ -37,6 +37,12 @@ class Train(object):
             self.vocab = custom_vocab
         else:  # use default vocab list
             self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
+
+        self.charlm_forward_file = charlm_forward_file
+        self.charlm_backward_file = charlm_backward_file
+        self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
+        if self.use_charlm:
+            print(f"Using charlm files {charlm_forward_file} and {charlm_backward_file}.")
 
         self.batcher = Batcher(config.TRAIN_DATA_PATH, self.vocab, mode='train',
                                batch_size=config.batch_size, single_pass=False)
@@ -77,7 +83,9 @@ class Train(object):
 
         self.model = Model(
             model_file_path,
-            custom_word_embedding=self.custom_word_embedding
+            custom_word_embedding=self.custom_word_embedding,
+            charlm_forward_file=self.charlm_forward_file,
+            charlm_backward_file=self.charlm_backward_file,
         )
     
 
@@ -107,7 +115,7 @@ class Train(object):
         """
         Executes training across a single batch of examples 
         """
-        enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage = \
+        enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage, truncated_articles = \
             get_input_from_batch(batch, use_cuda)
         dec_batch, dec_padding_mask, max_dec_len, dec_lens_var, target_batch = \
             get_output_from_batch(batch, use_cuda)
@@ -118,7 +126,9 @@ class Train(object):
         # TODO: we need to also pass the sentences into the encoder to generate charlm embeddings
         # Using the article words themselves (remember, it takes [[str]]) so we need to split each article
         # into sentences because the build_char_reps function takes lists of sentences
-        encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens)
+        # The length of truncated_articles should be the batch size
+
+        encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens, truncated_articles)
         s_t_1 = self.model.reduce_state(encoder_hidden)
 
         step_losses = []
@@ -201,8 +211,22 @@ if __name__ == '__main__':
                         required=False,
                         default="",
                         help="Optional custom vocab path to a PT file containing a custom vocabulary.")
+    
+    parser.add_argument("--charlm_forward_file",
+                        dest="charlm_forward_file",
+                        required=False,
+                        default=None,
+                        help="Optional custom charlm forward model file.")
+    
+    parser.add_argument("--charlm_backward_file",
+                        dest="charlm_backward_file",
+                        required=False,
+                        default=None,
+                        help="Optional custom charlm backward model file.")
 
     args = parser.parse_args()
     
-    train_processor = Train(custom_vocab_path=args.custom_vocab_path)
+    train_processor = Train(custom_vocab_path=args.custom_vocab_path,
+                            charlm_forward_file=args.charlm_forward_file,
+                            charlm_backward_file=args.charlm_backward_file)
     train_processor.trainIters(config.max_iterations, args.model_file_path)
