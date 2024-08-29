@@ -106,14 +106,21 @@ class Encoder(nn.Module):
             input is the enc_batch, which is the tensor of shape (Batch size, seq len) containing the token ID for each word
             seq_lens is the length of each example.
 
-        TODO
+            truncated_articles List[List[str]]: A list of sentences, where each sentence has a list of words
+
+        TODO use truncated sentences that have separated words
 
         What needs to be added here is the actual words themselves here so that the embeddings can be concatenated.
         This should be passed in as raw text. Then, we use the build_char_reps to get the embeddings. Finally, we should 
         concatenate the embeddings before they are used. The encoder outputs will be size (B, seq len, emb dim + charmodel dim).
 
-        TODO
-        also now we must edit the input size to the reduce state module to accommodate the charmodel integration
+        input: [[str]]
+          K sentences, each of length Ki (can be different for each sentence)
+        output: [tensor(Ki x dim)]
+          list of tensors, each one with shape Ki by the dim of the character model
+
+        Values are taken from the last character in a word for each word.
+        The words are effectively treated as if they are whitespace separated
         """
         embedded = self.embedding(input)  # (B, seq len, emb dim)
         print(f"Embedded shape: {embedded.shape}")
