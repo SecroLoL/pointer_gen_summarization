@@ -58,7 +58,7 @@ def get_input_from_batch(batch, use_cuda: bool):
   original_articles = batch.original_articles
   truncated_articles = []
   for art in original_articles:
-    art_words = art.split()
+    art_words = art.decode().split()
     art_words = art_words[: config.max_enc_steps]
     truncated_article = " ".join(art_words)
     truncated_articles.append(truncated_article)
