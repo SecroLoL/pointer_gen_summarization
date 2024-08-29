@@ -9,7 +9,6 @@ def get_input_from_batch(batch, use_cuda: bool):
   """
   batch_size = len(batch.enc_lens)
 
-  # TODO use this to implement charlm embeddings
   """
   batch.original_articles is a List[str], one string for each article in the batch.
 
@@ -54,7 +53,18 @@ def get_input_from_batch(batch, use_cuda: bool):
     if coverage is not None:
       coverage = coverage.cuda()
 
-  return enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage
+  # Attempt to load in the truncated text
+  # TODO this must be addressed in every usage of this function
+  original_articles = batch.original_articles
+  truncated_articles = []
+  for art in original_articles:
+    art_words = art.split()
+    art_words = art_words[: config.max_enc_steps]
+    truncated_article = " ".join(art_words)
+    truncated_articles.append(truncated_article)
+
+  print(f"Enc Batch Size: {enc_batch.size()}, Truncated articles length {len(truncated_articles)}")
+  return enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage, truncated_articles
 
 def get_output_from_batch(batch, use_cuda):
   dec_batch = Variable(torch.from_numpy(batch.dec_batch).long())
