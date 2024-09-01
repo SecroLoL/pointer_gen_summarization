@@ -236,9 +236,10 @@ class Train(object):
             if iter % SAVE_EVERY == 0:   # save and evaluate model every 5000 iters
                 running_avg_val_loss, save_path = self.save_model(running_avg_loss, iter)
                 if running_avg_val_loss <= BEST_LOSS:
+                    print(f"Found new best model at path {BEST_PATH} with running average validation loss of {BEST_LOSS}.")
                     BEST_LOSS = running_avg_val_loss
                     BEST_PATH = save_path
-        print(f"Finished training {n_iters} on model. Best validation set loss: {BEST_LOSS} with model at location {BEST_PATH}")
+        print(f"Finished training {n_iters} on model. Best validation set loss: {BEST_LOSS} with model at location {BEST_PATH}.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train script")
