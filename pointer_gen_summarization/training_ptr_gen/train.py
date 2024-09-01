@@ -23,13 +23,10 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Train(object):
     def __init__(self, custom_vocab_path: str = "", charlm_forward_file: str = "", charlm_backward_file: str = ""):
+
+        # Load custom Vocabulary, if needed
         self.use_custom_vocab = os.path.exists(custom_vocab_path)
         self.custom_word_embedding = None  # by default, use standard embeddings
-        if self.use_custom_vocab:
-            print(f"Creating custom Vocab with path {custom_vocab_path} and size {config.vocab_size}.")
-        else:
-            print(f"Using base Vocab from path {config.VOCAB_PATH} and size {config.vocab_size}.")
-
         if self.use_custom_vocab:
             custom_vocab, custom_emb = load_custom_vocab(vocab_path=custom_vocab_path)
             print(f"Using custom word embeddings taken from path {custom_vocab_path}.")
@@ -37,18 +34,25 @@ class Train(object):
             self.vocab = custom_vocab
         else:  # use default vocab list
             self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
-
+            print(f"Using base Vocab from path {config.VOCAB_PATH} and size {config.vocab_size}.")
+        # Load charlm embeddings if provided
         self.charlm_forward_file = charlm_forward_file
         self.charlm_backward_file = charlm_backward_file
         self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
         if self.use_charlm:
             print(f"Using charlm files {charlm_forward_file} and {charlm_backward_file}.")
-
-        self.batcher = Batcher(config.TRAIN_DATA_PATH, self.vocab, mode='train',
-                               batch_size=config.batch_size, single_pass=False)
+        if self.use_custom_vocab and self.custom_word_embedding is None or self.custom_word_embedding is not None and not self.custom_word_embedding:
+            raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
+                             f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
+        # Load data from Dataset Batcher
+        self.batcher = Batcher(data_path=config.TRAIN_DATA_PATH, 
+                               vocab=self.vocab, 
+                               mode='train',
+                               batch_size=config.batch_size, 
+                               single_pass=False)
         print(f"Loading batches using training data from {config.TRAIN_DATA_PATH}")
         time.sleep(15)
-
+        # Load data dirs 
         train_dir = os.path.join(config.LOG_ROOT, 'train_%d' % (int(time.time())))
         if not os.path.exists(train_dir):
             os.mkdir(train_dir)
@@ -59,11 +63,6 @@ class Train(object):
             os.mkdir(self.model_dir)
         print(f"Using model_dir {self.model_dir}")
         self.summary_writer = tf.summary.create_file_writer(train_dir)
-
-        if self.use_custom_vocab and self.custom_word_embedding is None or self.custom_word_embedding is not None and not self.custom_word_embedding:
-            raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
-                             f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
-
 
     def save_model(self, running_avg_loss: float, iter: int) -> None:
         """
