@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO)
 import tensorflow as tf
 import torch
 from model import Model
+from typing import List, Tuple, Mapping
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adagrad
 
@@ -18,6 +19,7 @@ from data_util.batcher import Batcher, Batch
 from data_util.data import Vocab, load_custom_vocab
 from data_util.utils import calc_running_avg_loss
 from training_ptr_gen.train_util import get_input_from_batch, get_output_from_batch
+from training_ptr_gen.eval import Evaluate
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
@@ -27,6 +29,7 @@ class Train(object):
         # Load custom Vocabulary, if needed
         self.use_custom_vocab = os.path.exists(custom_vocab_path)
         self.custom_word_embedding = None  # by default, use standard embeddings
+        self.custom_vocab_path = custom_vocab_path
         if self.use_custom_vocab:
             custom_vocab, custom_emb = load_custom_vocab(vocab_path=custom_vocab_path)
             print(f"Using custom word embeddings taken from path {custom_vocab_path}.")
@@ -64,13 +67,20 @@ class Train(object):
         print(f"Using model_dir {self.model_dir}")
         self.summary_writer = tf.summary.create_file_writer(train_dir)
 
-    def save_model(self, running_avg_loss: float, iter: int) -> None:
+    def save_model(self, running_avg_loss: float, iter: int) -> Tuple[float, str]:
         """
         Saves model state dict, optimizer, and current loss.
+
+        Also runs the model against the validation set, logging the running average loss across the eval set.
 
         Args:
             running_avg_loss (float): The running average loss for the current training job
             iter (int): The number of completed training iterations
+        
+        Returns:
+            Tuple[float, str]: There are two return objects.
+            First is the running average validation loss across the eval set.
+            Second is the model save path that was used to save this model edition.
         """
         state = {
             'iter': iter,
@@ -83,6 +93,13 @@ class Train(object):
         model_save_path = os.path.join(self.model_dir, 'model_%d_%d' % (iter, int(time.time())))
         print(f"Saving model to {model_save_path}")
         torch.save(state, model_save_path)
+        # Then run the evaluator on this and save the result
+        evaluator = Evaluate(model_file_path=model_save_path,
+                             custom_vocab_path=self.custom_vocab_path,
+                             charlm_forward_file=self.charlm_forward_file,
+                             charlm_backward_file=self.charlm_backward_file)
+        running_avg_loss = evaluator.run_eval()
+        return running_avg_loss, model_save_path
 
     def setup_train(self, model_file_path: str = None):
         """
@@ -181,6 +198,7 @@ class Train(object):
         After every `SAVE_EVERY` iterations, the model params will be saved.
 
         """
+        BEST_LOSS, BEST_PATH = float('inf'), ""
         # Validate the model path
         if model_file_path is not None and not os.path.exists(model_file_path):
             raise FileNotFoundError(f"Model file path provided ({model_file_path}) could not be found. Aborting.")
@@ -207,9 +225,12 @@ class Train(object):
                 print('steps %d, seconds for %d batch: %.2f , loss: %f' % (iter, print_interval,
                                                                            time.time() - start, loss))
                 start = time.time()
-            if iter % SAVE_EVERY == 0:   # save model every 5000 iters
-                self.save_model(running_avg_loss, iter)
-
+            if iter % SAVE_EVERY == 0:   # save and evaluate model every 5000 iters
+                running_avg_val_loss, save_path = self.save_model(running_avg_loss, iter)
+                if running_avg_val_loss <= BEST_LOSS:
+                    BEST_LOSS = running_avg_val_loss
+                    BEST_PATH = save_path
+        print(f"Finished training {n_iters} on model. Best validation set loss: {BEST_LOSS} with model at location {BEST_PATH}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train script")
