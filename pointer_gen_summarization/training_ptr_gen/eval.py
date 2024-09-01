@@ -119,6 +119,7 @@ class Evaluate(object):
             batch = self.batcher.next_batch()
         
         print(f"Finished running eval on {count} batches.")
+        return running_avg_loss
 
 
 if __name__ == '__main__':
@@ -160,4 +161,4 @@ if __name__ == '__main__':
         charlm_forward_file=charlm_forward, 
         charlm_backward_file=charlm_backward
     )
-    eval_processor.run_eval()
+    running_avg_loss = eval_processor.run_eval()
