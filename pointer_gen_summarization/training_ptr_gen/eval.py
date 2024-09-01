@@ -22,6 +22,7 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Evaluate(object):
     def __init__(self, model_file_path, custom_vocab_path: str):
+        # TODO add charlm files here
         print(f"Creating evaluator for model in path {model_file_path}")
         self.use_custom_vocab = os.path.exists(custom_vocab_path)
         self.custom_word_embedding = None  # by default, use standard embeddings
@@ -54,6 +55,7 @@ class Evaluate(object):
             raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
                             f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
 
+        # TODO add charlm file
         self.model = Model(model_file_path, 
                            is_eval=True,
                            custom_word_embedding=self.custom_word_embedding)
@@ -61,12 +63,12 @@ class Evaluate(object):
         
 
     def eval_one_batch(self, batch):
-        enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage = \
+        enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage, truncated_articles = \
             get_input_from_batch(batch, use_cuda)
         dec_batch, dec_padding_mask, max_dec_len, dec_lens_var, target_batch = \
             get_output_from_batch(batch, use_cuda)
 
-        encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens)
+        encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens, truncated_articles)
         s_t_1 = self.model.reduce_state(encoder_hidden)
 
         step_losses = []

@@ -46,6 +46,7 @@ class Beam(object):
 
 class BeamSearch(object):
     def __init__(self, model_file_path, custom_vocab_path):
+        # TODO add charlm file here
         print(f"creating beam searcher for model {model_file_path}")
         model_name = os.path.basename(model_file_path)
         self._decode_dir = os.path.join(config.LOG_ROOT, 'decode_%s' % (model_name))
@@ -82,6 +83,7 @@ class BeamSearch(object):
             raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
                             f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
 
+        # TODO add charlm file
         self.model = Model(model_file_path, 
                            is_eval=True,
                            custom_word_embedding=self.custom_word_embedding)
@@ -131,10 +133,10 @@ class BeamSearch(object):
 
     def beam_search(self, batch):
         #batch should have only one example
-        enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_0, coverage_t_0 = \
+        enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_0, coverage_t_0, truncated_articles = \
             get_input_from_batch(batch, use_cuda)
 
-        encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens)
+        encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens, truncated_articles)
         s_t_0 = self.model.reduce_state(encoder_hidden)
 
         dec_h, dec_c = s_t_0 # 1 x 2*hidden_size
