@@ -1,18 +1,15 @@
 from __future__ import unicode_literals, print_function, division
-
 import argparse
 import os
 import logging
 import time
 import sys
-
 import tensorflow as tf
 import torch
 
 from data_util import config
-from data_util.batcher import Batcher
+from data_util.batcher import Batcher, Batch
 from data_util.data import Vocab
-
 from data_util.utils import calc_running_avg_loss
 from training_ptr_gen.train_util import get_input_from_batch, get_output_from_batch
 from training_ptr_gen.model import Model
@@ -21,7 +18,18 @@ from data_util.data import load_custom_vocab
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Evaluate(object):
-    def __init__(self, model_file_path, custom_vocab_path: str, charlm_forward_file: str, charlm_backward_file: str):
+    """
+    Evaluation object for running model against validation set.
+    """
+    def __init__(self, model_file_path: str, custom_vocab_path: str, charlm_forward_file: str, charlm_backward_file: str):
+        """
+        Constructor for an evaluation object.
+        Args:
+            model_file_path (str): Location of saved model used for evaluation
+            custom_vocab_path (str): Path to custom embeddings and vocab object
+            charlm_forward_file (str): Path to pretrained embeddings for forward charlm
+            charlm_backward_file (str): Path to pretrained embeddings for backward charlm
+        """
         print(f"Creating evaluator for model in path {model_file_path}")
         self.use_custom_vocab = os.path.exists(custom_vocab_path)
         self.custom_word_embedding = None  # by default, use standard embeddings
@@ -62,7 +70,12 @@ class Evaluate(object):
                            charlm_forward_file=charlm_forward_file,
                            charlm_backward_file=charlm_backward_file)
 
-    def eval_one_batch(self, batch):
+    def eval_one_batch(self, batch: Batch) -> float:
+        """
+        Evalutes the model against a single batch of examples.
+
+        Returns the validation loss for this batch of examples.
+        """
         enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage, truncated_articles = \
             get_input_from_batch(batch, use_cuda)
         dec_batch, dec_padding_mask, max_dec_len, dec_lens_var, target_batch = \
@@ -92,10 +105,14 @@ class Evaluate(object):
         sum_step_losses = torch.sum(torch.stack(step_losses, 1), 1)
         batch_avg_loss = sum_step_losses / dec_lens_var
         loss = torch.mean(batch_avg_loss)
-
         return loss.item()
 
-    def run_eval(self):
+    def run_eval(self) -> float:
+        """
+        Runs the model against the validation set.
+
+        Returns the running average loss on the validation set.
+        """
         running_avg_loss, iter = 0, 0
         start = time.time()
         batch = self.batcher.next_batch()
