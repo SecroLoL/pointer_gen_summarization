@@ -25,7 +25,15 @@ use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Train(object):
     def __init__(self, custom_vocab_path: str = "", charlm_forward_file: str = "", charlm_backward_file: str = ""):
+        """
+        Constructor for a training job object
 
+        Loads in custom word embeddings if provided
+        Loads in charlm embeddings if provided
+
+        Loads the training dataset
+        Creates training dirs to log data
+        """
         # Load custom Vocabulary, if needed
         self.use_custom_vocab = os.path.exists(custom_vocab_path)
         self.custom_word_embedding = None  # by default, use standard embeddings
