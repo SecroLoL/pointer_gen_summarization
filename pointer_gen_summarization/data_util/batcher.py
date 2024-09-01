@@ -156,9 +156,6 @@ class Batch(object):
     self.original_articles = [ex.original_article for ex in example_list] # List[str]
     self.original_abstracts = [ex.original_abstract for ex in example_list] # List[str]
     self.original_abstracts_sents = [ex.original_abstract_sents for ex in example_list] # List[List[str]]
-    # TODO use this
-    # char_reps_forward = self.charmodel_forward.build_char_representation(sentences)  # takes [[str]]
-    #         char_reps_backward = self.charmodel_backward.build_char_representation(sentences)
 
 class Batcher(object):
   BATCH_QUEUE_MAX = 25 # max number of batches the batch_queue can hold

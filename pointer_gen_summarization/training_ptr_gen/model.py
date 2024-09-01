@@ -68,26 +68,9 @@ class Encoder(nn.Module):
         print(f"Successfully initialized Encoder. Used custom word embedding? ({custom_word_embedding})\n"
               f"Shape of embedding layer weights: {self.embedding.weight.data.shape}.")
 
-    #seq_lens should be in descending order
-    # TODO: take the raw text of the article as input too, and generate charlm embeddings here as well
-    '''
-    https://github.com/stanfordnlp/stanza/blob/alex_lemmatizer_classifier/stanza/models/common/char_model.py#L145
-    line 183 
-    def build_char_representation(self, sentences):
-        """
-        Return values from this charlm for a list of list of words
-        input: [[str]]
-          K sentences, each of length Ki (can be different for each sentence)
-        output: [tensor(Ki x dim)]
-          list of tensors, each one with shape Ki by the dim of the character model
-        Values are taken from the last character in a word for each word.
-        The words are effectively treated as if they are whitespace separated
-        (which may actually be somewhat inaccurate for languages such as Chinese or for MWT)
-        """
-    '''
-
     def forward(self, input, seq_lens, truncated_articles):
         """
+        TODO clean this up when finished
         Args:
             input: this is the enc_batch object that gets loaded from the get_input_from_batch() function.
 
@@ -107,8 +90,6 @@ class Encoder(nn.Module):
             seq_lens is the length of each example.
 
             truncated_articles List[List[str]]: A list of sentences, where each sentence has a list of words
-
-        TODO use truncated sentences that have separated words
 
         What needs to be added here is the actual words themselves here so that the embeddings can be concatenated.
         This should be passed in as raw text. Then, we use the build_char_reps to get the embeddings. Finally, we should 

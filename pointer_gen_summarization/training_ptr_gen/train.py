@@ -123,7 +123,6 @@ class Train(object):
         self.optimizer.zero_grad()
         
         # enc batch is the tensor of shape (B, seq len) with the token IDs of the article
-        # TODO: we need to also pass the sentences into the encoder to generate charlm embeddings
         # Using the article words themselves (remember, it takes [[str]]) so we need to split each article
         # into sentences because the build_char_reps function takes lists of sentences
         # The length of truncated_articles should be the batch size

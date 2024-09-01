@@ -54,7 +54,6 @@ def get_input_from_batch(batch, use_cuda: bool):
       coverage = coverage.cuda()
 
   # Attempt to load in the truncated text
-  # TODO this must be addressed in every usage of this function
   original_articles = batch.original_articles
   truncated_articles = []
   for art in original_articles:
