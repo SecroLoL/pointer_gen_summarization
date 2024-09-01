@@ -222,6 +222,7 @@ class Train(object):
         print(f"Finished training setup. Beginning train: iteration {iter} / {n_iters}")
         while iter < n_iters:
             batch = self.batcher.next_batch()  # load the next training batch
+            print(torch.cuda.memory_summary(device=None, abbreviated=False))
             loss = self.train_one_batch(batch)
             running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
             iter += 1
