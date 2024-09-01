@@ -10,7 +10,7 @@ import time
 import torch
 from torch.autograd import Variable
 
-from data_util.batcher import Batcher
+from data_util.batcher import Batcher, Batch
 from data_util.data import Vocab, load_custom_vocab
 from data_util import data, config
 from training_ptr_gen.model import Model
@@ -21,6 +21,9 @@ from training_ptr_gen.train_util import get_input_from_batch
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
 class Beam(object):
+  """
+  Beam search hypothesis class
+  """
   def __init__(self, tokens, log_probs, state, context, coverage):
     self.tokens = tokens
     self.log_probs = log_probs
@@ -29,6 +32,9 @@ class Beam(object):
     self.coverage = coverage
 
   def extend(self, token, log_prob, state, context, coverage):
+    """
+    Extends a hypothesis decoding by one token
+    """
     return Beam(tokens = self.tokens + [token],
                       log_probs = self.log_probs + [log_prob],
                       state = state,
@@ -46,6 +52,16 @@ class Beam(object):
 
 class BeamSearch(object):
     def __init__(self, model_file_path: str, custom_vocab_path: str, charlm_forward_file: str, charlm_backward_file: str):
+        """
+        Constructor for a Beam Search Decoder
+
+        Args:
+            model_file_path (str): Location of saved model used for evaluation
+            custom_vocab_path (str): Path to custom embeddings and vocab object
+            charlm_forward_file (str): Path to pretrained embeddings for forward charlm
+            charlm_backward_file (str): Path to pretrained embeddings for backward charlm
+        """
+        # Create decoder output dirs
         print(f"creating beam searcher for model {model_file_path}")
         model_name = os.path.basename(model_file_path)
         self._decode_dir = os.path.join(config.LOG_ROOT, 'decode_%s' % (model_name))
@@ -54,10 +70,10 @@ class BeamSearch(object):
         for p in [self._decode_dir, self._rouge_ref_dir, self._rouge_dec_dir]:
             if not os.path.exists(p):
                 os.mkdir(p)
-
         print(f"Decode dir: {self._decode_dir}")
         print(f"ROUGE REF DIR: {self._rouge_ref_dir}")
-
+        
+        # Load custom word embeddings, if needed
         self.use_custom_vocab = os.path.exists(custom_vocab_path)
         self.custom_word_embedding = None  # by default, use standard embeddings
         if self.use_custom_vocab:
@@ -72,22 +88,21 @@ class BeamSearch(object):
             self.vocab = custom_vocab
         else:  # use default vocab list
             self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
-        
+        # Load charlm embeddings 
         self.charlm_forward_file = charlm_forward_file
         self.charlm_backward_file = charlm_backward_file
         self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
         if self.use_charlm:
             print(f"Using charlm files {charlm_forward_file} and {charlm_backward_file}.")
-
-        self.batcher = Batcher(config.DECODE_DATA_PATH, self.vocab, mode='decode',
-                               batch_size=config.beam_size, single_pass=True)
-        print(f"Data from {config.DECODE_DATA_PATH}")
-        time.sleep(15)
-
         if self.use_custom_vocab and self.custom_word_embedding is None or self.custom_word_embedding is not None and not self.custom_word_embedding:
             raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
                             f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
 
+        # Loading dataset through batcher 
+        self.batcher = Batcher(config.DECODE_DATA_PATH, self.vocab, mode='decode',
+                               batch_size=config.beam_size, single_pass=True)
+        print(f"Batcher loading data from {config.DECODE_DATA_PATH}")
+        time.sleep(15)
         self.model = Model(model_file_path, 
                            is_eval=True,
                            custom_word_embedding=self.custom_word_embedding,
@@ -96,10 +111,16 @@ class BeamSearch(object):
 
 
     def sort_beams(self, beams):
+        """
+        Sorts beam search hypotheses by their average log probability 
+        """
         return sorted(beams, key=lambda h: h.avg_log_prob, reverse=True)
 
 
     def decode(self, finished_decoding: bool = False):
+        """
+        Decodes all texts using beam search
+        """
         start = time.time()
         counter = 0
         batch = self.batcher.next_batch()
@@ -137,7 +158,12 @@ class BeamSearch(object):
         rouge_log(results_dict, self._decode_dir)
 
 
-    def beam_search(self, batch):
+    def beam_search(self, batch: Batch):
+        """
+        Perform beam search for a single example.
+
+        The batch object should be filled with multiple instances of a single example.
+        """
         #batch should have only one example
         enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_0, coverage_t_0, truncated_articles = \
             get_input_from_batch(batch, use_cuda)
