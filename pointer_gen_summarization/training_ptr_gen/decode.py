@@ -45,8 +45,7 @@ class Beam(object):
 
 
 class BeamSearch(object):
-    def __init__(self, model_file_path, custom_vocab_path):
-        # TODO add charlm file here
+    def __init__(self, model_file_path: str, custom_vocab_path: str, charlm_forward_file: str, charlm_backward_file: str):
         print(f"creating beam searcher for model {model_file_path}")
         model_name = os.path.basename(model_file_path)
         self._decode_dir = os.path.join(config.LOG_ROOT, 'decode_%s' % (model_name))
@@ -73,6 +72,12 @@ class BeamSearch(object):
             self.vocab = custom_vocab
         else:  # use default vocab list
             self.vocab = Vocab(config.VOCAB_PATH, config.vocab_size)
+        
+        self.charlm_forward_file = charlm_forward_file
+        self.charlm_backward_file = charlm_backward_file
+        self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
+        if self.use_charlm:
+            print(f"Using charlm files {charlm_forward_file} and {charlm_backward_file}.")
 
         self.batcher = Batcher(config.DECODE_DATA_PATH, self.vocab, mode='decode',
                                batch_size=config.beam_size, single_pass=True)
@@ -83,10 +88,11 @@ class BeamSearch(object):
             raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
                             f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
 
-        # TODO add charlm file
         self.model = Model(model_file_path, 
                            is_eval=True,
-                           custom_word_embedding=self.custom_word_embedding)
+                           custom_word_embedding=self.custom_word_embedding,
+                           charlm_forward_file=charlm_forward_file,
+                           charlm_backward_file=charlm_backward_file)
 
 
     def sort_beams(self, beams):
@@ -239,14 +245,30 @@ if __name__ == '__main__':
                         required=False,
                         default="",
                         help="Optional custom vocab path to a PT file containing a custom vocabulary.")
+    parser.add_argument("--charlm_forward_file",
+                        dest="charlm_forward_file",
+                        required=False,
+                        default=None,
+                        help="Optional custom charlm forward model file.")
+    
+    parser.add_argument("--charlm_backward_file",
+                        dest="charlm_backward_file",
+                        required=False,
+                        default=None,
+                        help="Optional custom charlm backward model file.")
 
     args = parser.parse_args()
 
     model_filename = args.model_file_path
     custom_vocab_path = args.custom_vocab_path
+    charlm_forward, charlm_backward = args.charlm_forward_file, args.charlm_backward_file
 
     print(f"running beam search decoding on model from path {model_filename}")
-    beam_Search_processor = BeamSearch(model_filename, custom_vocab_path)
+    beam_Search_processor = BeamSearch(model_filename, 
+                                       custom_vocab_path,
+                                       charlm_forward_file=charlm_forward,
+                                       charlm_backward_file=charlm_backward
+                                       )
     beam_Search_processor.decode()
 
 
