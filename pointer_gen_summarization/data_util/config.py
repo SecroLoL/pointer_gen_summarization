@@ -3,8 +3,8 @@ import os
 ROOT_DIR = "/u/nlp/data/cnn_dm_2/"  # where all information is contained
 LOG_ROOT = os.path.join(ROOT_DIR, "dataset/log/")  # where all log data for training jobs will be contained, e.g. model checkpoints, evaluation results, and decoding outputs.
 TRAIN_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/chunked/train_*")  # path to chunked training data
-EVAL_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/val.bin")
-DECODE_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/test.bin")
+EVAL_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/chunked/val_*")
+DECODE_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/test_*")
 VOCAB_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/vocab")  # default vocab path
 
 CUSTOM_VOCAB_PATH = "/Users/alexshan/Desktop/pointer_gen_summarization/pointer_gen_summarization/data_util/glove.pt"
