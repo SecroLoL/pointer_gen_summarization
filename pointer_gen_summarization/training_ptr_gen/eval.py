@@ -62,8 +62,6 @@ class Evaluate(object):
                            charlm_forward_file=charlm_forward_file,
                            charlm_backward_file=charlm_backward_file)
 
-        
-
     def eval_one_batch(self, batch):
         enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage, truncated_articles = \
             get_input_from_batch(batch, use_cuda)

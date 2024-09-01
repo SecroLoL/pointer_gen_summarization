@@ -14,7 +14,7 @@ from torch.nn.utils import clip_grad_norm_
 from torch.optim import Adagrad
 
 from data_util import config
-from data_util.batcher import Batcher
+from data_util.batcher import Batcher, Batch
 from data_util.data import Vocab, load_custom_vocab
 from data_util.utils import calc_running_avg_loss
 from training_ptr_gen.train_util import get_input_from_batch, get_output_from_batch
@@ -65,7 +65,14 @@ class Train(object):
                              f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
 
 
-    def save_model(self, running_avg_loss, iter):
+    def save_model(self, running_avg_loss: float, iter: int) -> None:
+        """
+        Saves model state dict, optimizer, and current loss.
+
+        Args:
+            running_avg_loss (float): The running average loss for the current training job
+            iter (int): The number of completed training iterations
+        """
         state = {
             'iter': iter,
             'encoder_state_dict': self.model.encoder.state_dict(),
@@ -78,7 +85,12 @@ class Train(object):
         print(f"Saving model to {model_save_path}")
         torch.save(state, model_save_path)
 
-    def setup_train(self, model_file_path=None):
+    def setup_train(self, model_file_path: str = None):
+        """
+        Creates model from `model_file_path`, or creates it from scratch to a new file if not provided.
+
+        Creates optimizer, sets up save file path, and loads in current loss and iteration number
+        """
         print(f"Executing setup train with {model_file_path if model_file_path is not None else 'a new model.'}")
 
         self.model = Model(
@@ -111,15 +123,14 @@ class Train(object):
 
         return start_iter, start_loss
 
-    def train_one_batch(self, batch):
+    def train_one_batch(self, batch: Batch):
         """
-        Executes training across a single batch of examples 
+        Executes training across a single batch of examples.
         """
         enc_batch, enc_padding_mask, enc_lens, enc_batch_extend_vocab, extra_zeros, c_t_1, coverage, truncated_articles = \
             get_input_from_batch(batch, use_cuda)
         dec_batch, dec_padding_mask, max_dec_len, dec_lens_var, target_batch = \
             get_output_from_batch(batch, use_cuda)
-
         self.optimizer.zero_grad()
         
         # enc batch is the tensor of shape (B, seq len) with the token IDs of the article
@@ -129,14 +140,12 @@ class Train(object):
 
         encoder_outputs, encoder_feature, encoder_hidden = self.model.encoder(enc_batch, enc_lens, truncated_articles)
         s_t_1 = self.model.reduce_state(encoder_hidden)
-
         step_losses = []
         for di in range(min(max_dec_len, config.max_dec_steps)):
             y_t_1 = dec_batch[:, di]  # Teacher forcing
             final_dist, s_t_1,  c_t_1, attn_dist, p_gen, next_coverage = self.model.decoder(y_t_1, s_t_1,
                                                         encoder_outputs, encoder_feature, enc_padding_mask, c_t_1,
-                                                        extra_zeros, enc_batch_extend_vocab,
-                                                                           coverage, di)
+                                                        extra_zeros, enc_batch_extend_vocab,coverage, di)
             target = target_batch[:, di]
             gold_probs = torch.gather(final_dist, 1, target.unsqueeze(1)).squeeze()
             step_loss = -torch.log(gold_probs + config.eps)
@@ -149,42 +158,48 @@ class Train(object):
             step_loss = step_loss * step_mask
             step_losses.append(step_loss)
 
+        # Compute losses
         sum_losses = torch.sum(torch.stack(step_losses, 1), 1)
         batch_avg_loss = sum_losses/dec_lens_var
         loss = torch.mean(batch_avg_loss)
-
         loss.backward()
-
+        # Clip gradient norm
         self.norm = clip_grad_norm_(self.model.encoder.parameters(), config.max_grad_norm)
         clip_grad_norm_(self.model.decoder.parameters(), config.max_grad_norm)
         clip_grad_norm_(self.model.reduce_state.parameters(), config.max_grad_norm)
-
         self.optimizer.step()
-
         return loss.item()
 
-    def trainIters(self, n_iters: int, model_file_path=None):
-        SAVE_EVERY = 5000  # save model every N iterations
+    def trainIters(self, n_iters: int, model_file_path: str = None, SAVE_EVERY: int = 5000):
         """
-        Trains model for n_iters, loading model from `model_file_path` if provided.
+        Trains model for `n_iters`, loading model from `model_file_path` if provided.
+
+        Note that `n_iters` is an absolute number. So that means that if the model has already trained for 1000 iterations,
+        setting `n_iters` to 2000 will train it for another 1000 iterations. 
+
+        If `model_file_path` not provided, this function will create one.
+
+        After every `SAVE_EVERY` iterations, the model params will be saved.
+
         """
+        # Validate the model path
         if model_file_path is not None and not os.path.exists(model_file_path):
             raise FileNotFoundError(f"Model file path provided ({model_file_path}) could not be found. Aborting.")
         if model_file_path is None:
             print("Beginning model training from scratch.")
         else:
             print(f"Beginning training with model from {model_file_path}")
+        
+        # Initialize the model and restore parameters if a model file path was specified.
         iter, running_avg_loss = self.setup_train(model_file_path)
         start = time.time()
-
+        # Execute train job
         print(f"Finished training setup. Beginning train: iteration {iter} / {n_iters}")
         while iter < n_iters:
             batch = self.batcher.next_batch()  # load the next training batch
             loss = self.train_one_batch(batch)
-
             running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
             iter += 1
-
             # Log training progress
             if iter % 100 == 0:
                 self.summary_writer.flush()
