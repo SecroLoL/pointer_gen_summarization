@@ -7,6 +7,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+import matplotlib.pyplot as plt
 import tensorflow as tf
 import torch
 from model import Model
@@ -208,10 +209,12 @@ class Train(object):
         start = time.time()
         # Execute train job
         print(f"Finished training setup. Beginning train: iteration {iter} / {n_iters}")
+        loss_history = []  # to store the running average loss
         while iter < n_iters:
             batch = self.batcher.next_batch()  # load the next training batch
             loss = self.train_one_batch(batch)
             running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
+            loss_history.append(running_avg_loss)  # add the running average loss to the history
             iter += 1
             # Log training progress
             if iter % 100 == 0:
@@ -223,6 +226,13 @@ class Train(object):
                 start = time.time()
             if iter % SAVE_EVERY == 0:   # save and evaluate model every 5000 iters
                 self.save_model(running_avg_loss, iter)
+        
+        # Plot the running average loss
+        plt.plot(range(1, n_iters+1), loss_history)
+        plt.xlabel('Iterations')
+        plt.ylabel('Running Average Loss')
+        plt.title('Running Average Loss vs Iterations')
+        plt.show()
                 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train script")
