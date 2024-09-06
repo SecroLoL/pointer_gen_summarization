@@ -1,4 +1,4 @@
-#Most of this file is copied form https://github.com/abisee/pointer-generator/blob/master/batcher.py
+# Most of this file is copied form https://github.com/abisee/pointer-generator/blob/master/batcher.py
 
 import queue
 import logging 
@@ -12,13 +12,20 @@ import data_util.config as config
 import data_util.data as data
 
 random.seed(1234)
-
 logger = logging.getLogger(__name__)
 
 
 class Example(object):
 
   def __init__(self, article: str, abstract_sentences: List[str], vocab):
+    """
+    Constructor for an Example object.
+
+    Args:
+        article (str): The article text.
+        abstract_sentences (List[str]): The abstract text, split into sentences.
+        vocab (Vocab): A Vocab object.
+    """
     # Get ids of special tokens
     start_decoding = vocab.word2id(data.START_DECODING)
     stop_decoding = vocab.word2id(data.STOP_DECODING)
@@ -97,9 +104,12 @@ class Batch(object):
     self.store_orig_strings(example_list) # store the original strings
 
 
-  def init_encoder_seq(self, example_list):
+  def init_encoder_seq(self, example_list: List[Example]):
     """
-    Creates input to the encoder
+    Creates an input sequence to the encoder 
+
+    Args:
+        example_list (List[Example]): A list of Example objects
     """
     # Find the longest input seq in the batch for encoder
     max_enc_seq_len = max([ex.enc_len for ex in example_list])
@@ -133,7 +143,13 @@ class Batch(object):
       for i, ex in enumerate(example_list):
         self.enc_batch_extend_vocab[i, :] = ex.enc_input_extend_vocab[:]
 
-  def init_decoder_seq(self, example_list):
+  def init_decoder_seq(self, example_list: List[Example]):
+    """
+    Creates a input and target sequence for the decoder.
+
+    Args:
+        example_list (List[Example]): A list of Example objects of the target batch
+    """
     # Pad the inputs and targets
     for ex in example_list:
       ex.pad_decoder_inp_targ(config.max_dec_steps, self.pad_id)
@@ -153,14 +169,60 @@ class Batch(object):
         self.dec_padding_mask[i][j] = 1
 
   def store_orig_strings(self, example_list):
+    """
+    Store the original article and abstract strings in the Batch object
+
+    Args:
+      example_list (List[Example]): A list of Example objects
+    """
     self.original_articles = [ex.original_article for ex in example_list] # List[str]
     self.original_abstracts = [ex.original_abstract for ex in example_list] # List[str]
     self.original_abstracts_sents = [ex.original_abstract_sents for ex in example_list] # List[List[str]]
 
 class Batcher(object):
+  """
+  A class that handles batching of examples for training or decoding.
+  Args:
+    data_path (str): The path to the data file.
+    vocab (Vocab): The vocabulary object.
+    mode (str): The mode of operation ('train', 'eval', or 'decode').
+    batch_size (int): The batch size.
+    single_pass (bool): Whether to read the data file only once.
+  Attributes:
+    BATCH_QUEUE_MAX (int): The maximum number of batches the batch_queue can hold.
+    _data_path (str): The path to the data file.
+    _vocab (Vocab): The vocabulary object.
+    _single_pass (bool): Whether to read the data file only once.
+    mode (str): The mode of operation ('train', 'eval', or 'decode').
+    batch_size (int): The batch size.
+    _batch_queue (Queue): A queue of Batches waiting to be used.
+    _example_queue (Queue): A queue of Examples waiting to be batched.
+    _num_example_q_threads (int): The number of threads to fill the example queue.
+    _num_batch_q_threads (int): The number of threads to fill the batch queue.
+    _bucketing_cache_size (int): The number of batches-worth of examples to load into cache before bucketing.
+    _finished_reading (bool): Indicates whether we have finished reading the dataset.
+    _example_q_threads (list): A list of threads that fill the example queue.
+    _batch_q_threads (list): A list of threads that fill the batch queue.
+    _watch_thread (Thread): A thread that watches the other threads and restarts them if they're dead.
+  Methods:
+    next_batch(): Retrieves the next batch from the batch queue.
+    fill_example_queue(): Fills the example queue with Examples.
+    fill_batch_queue(): Fills the batch queue with Batches.
+    watch_threads(): Watches the other threads and restarts them if they're dead.
+    text_generator(): Generates text from the example generator.
+  """
   BATCH_QUEUE_MAX = 25 # max number of batches the batch_queue can hold
 
   def __init__(self, data_path, vocab, mode, batch_size, single_pass):
+    """
+    Initializes a Batcher object.
+    Args:
+      data_path (str): The path to the data.
+      vocab: The vocabulary object.
+      mode (str): The mode of operation.
+      batch_size (int): The batch size.
+      single_pass (bool): Whether to run in single pass mode or not.
+    """
     self._data_path = data_path
     self._vocab = vocab
     self._single_pass = single_pass
@@ -200,6 +262,9 @@ class Batcher(object):
       self._watch_thread.start()
 
   def next_batch(self):
+    """
+    Retrieves the next batch from the batch queue.
+    """
     # If the batch queue is empty, print a warning
     if self._batch_queue.qsize() == 0:
       logger.warning('Bucket input queue is empty when calling next_batch. Bucket queue size: %i, Input queue size: %i', self._batch_queue.qsize(), self._example_queue.qsize())
@@ -211,6 +276,19 @@ class Batcher(object):
     return batch
 
   def fill_example_queue(self):
+    """
+    Fills the example queue with examples from the data source.
+
+    This method reads examples from a file and processes them into Example objects. It uses a text generator to iterate through the examples. Each example consists of an article and an abstract, both represented as strings. The method continues filling the example queue until there are no more examples left in the data source.
+    If the single_pass mode is on and there are no more examples, the method sets the _finished_reading flag to True and stops. If the single_pass mode is off and there are no more examples, the method raises an exception.
+    The abstract is processed into a list of sentences using the <s> and </s> tags. Each sentence is stripped of leading and trailing whitespace.
+    After processing an example, it is placed in the example queue for further processing.
+    
+    Parameters:
+    - self: The Batcher object.
+    Returns:
+    - None
+    """
     input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass))
 
     while True:
@@ -232,6 +310,16 @@ class Batcher(object):
       self._example_queue.put(example) # place the Example in the example queue.
 
   def fill_batch_queue(self):
+    """
+    Fills the batch queue with batches of Examples.
+    If the mode is 'decode', it creates a batch with a single example repeated multiple times.
+    Otherwise, it retrieves batches of Examples from the example queue, sorts them based on the length of the encoder sequence,
+    groups them into batches, optionally shuffles the batches, and places them in the batch queue.
+    
+    Returns:
+      None
+    """
+    
     while True:
       if self.mode == 'decode':
         # beam search decode mode single example repeated in the batch
@@ -255,6 +343,13 @@ class Batcher(object):
           self._batch_queue.put(Batch(b, self._vocab, self.batch_size))
 
   def watch_threads(self):
+    """
+    Monitors the status of the example and batch queues in a continuous loop.
+    Prints the size of the bucket queue and input queue.
+    Restarts any dead threads in the example and batch queues.
+    Returns:
+      None
+    """
     while True:
       logger.info(
         'Bucket queue size: %i, Input queue size: %i',
@@ -278,6 +373,18 @@ class Batcher(object):
 
 
   def text_generator(self, example_generator):
+    """
+    Generates text data from an example generator.
+    Args:
+      example_generator: An iterator that generates tf.Example objects.
+    Yields:
+      A tuple containing the article text and abstract text from each tf.Example.
+    Raises:
+      ValueError: If the article or abstract cannot be retrieved from the example.
+    Warnings:
+      If an example has an empty article text, it will be skipped.
+    """
+    
     while True:
       e = example_generator.__next__() # e is a tf.Example
       try:
