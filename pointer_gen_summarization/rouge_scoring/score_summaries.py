@@ -33,7 +33,6 @@ def main(generated_dir, reference_dir):
     
     all_scores = []
     for gen_file, ref_file in zip(generated_files, reference_files):
-        print(f"Evaluating {gen_file} against {ref_file}\n")
         generated_summary = read_file(gen_file)
         reference_summary = read_file(ref_file)
 
