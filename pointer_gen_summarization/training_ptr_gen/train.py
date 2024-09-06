@@ -75,20 +75,14 @@ class Train(object):
         print(f"Using model_dir {self.model_dir}")
         self.summary_writer = tf.summary.create_file_writer(train_dir)
 
-    def save_model(self, running_avg_loss: float, iter: int) -> Tuple[float, str]:
+    def save_model(self, running_avg_loss: float, iter: int):
         """
         Saves model state dict, optimizer, and current loss.
-
-        Also runs the model against the validation set, logging the running average loss across the eval set.
 
         Args:
             running_avg_loss (float): The running average loss for the current training job
             iter (int): The number of completed training iterations
         
-        Returns:
-            Tuple[float, str]: There are two return objects.
-            First is the running average validation loss across the eval set.
-            Second is the model save path that was used to save this model edition.
         """
         state = {
             'iter': iter,
@@ -101,13 +95,6 @@ class Train(object):
         model_save_path = os.path.join(self.model_dir, 'model_%d_%d' % (iter, int(time.time())))
         print(f"Saving model to {model_save_path}")
         torch.save(state, model_save_path)
-        # Then run the evaluator on this and save the result
-        evaluator = Evaluate(model_file_path=model_save_path,
-                             custom_vocab_path=self.custom_vocab_path,
-                             charlm_forward_file=self.charlm_forward_file,
-                             charlm_backward_file=self.charlm_backward_file)
-        running_avg_loss = evaluator.run_eval()
-        return running_avg_loss, model_save_path
 
     def setup_train(self, model_file_path: str = None):
         """
@@ -206,7 +193,6 @@ class Train(object):
         After every `SAVE_EVERY` iterations, the model params will be saved.
 
         """
-        BEST_LOSS, BEST_PATH = float('inf'), ""
         # Validate the model path
         if model_file_path is not None and not os.path.exists(model_file_path):
             raise FileNotFoundError(f"Model file path provided ({model_file_path}) could not be found. Aborting.")
@@ -222,7 +208,6 @@ class Train(object):
         print(f"Finished training setup. Beginning train: iteration {iter} / {n_iters}")
         while iter < n_iters:
             batch = self.batcher.next_batch()  # load the next training batch
-            print(torch.cuda.memory_summary(device=None, abbreviated=False))
             loss = self.train_one_batch(batch)
             running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
             iter += 1
@@ -235,13 +220,8 @@ class Train(object):
                                                                            time.time() - start, loss))
                 start = time.time()
             if iter % SAVE_EVERY == 0:   # save and evaluate model every 5000 iters
-                running_avg_val_loss, save_path = self.save_model(running_avg_loss, iter)
-                if running_avg_val_loss <= BEST_LOSS:
-                    print(f"Found new best model at path {BEST_PATH} with running average validation loss of {BEST_LOSS}.")
-                    BEST_LOSS = running_avg_val_loss
-                    BEST_PATH = save_path
-        print(f"Finished training {n_iters} on model. Best validation set loss: {BEST_LOSS} with model at location {BEST_PATH}.")
-
+                self.save_model(running_avg_loss, iter)
+                
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Train script")
     parser.add_argument("--m",
