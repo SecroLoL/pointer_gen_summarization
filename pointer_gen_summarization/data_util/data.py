@@ -25,7 +25,7 @@ STOP_DECODING = '[STOP]' # This has a vocab id, which is used at the end of untr
 
 class Vocab(object):
 
-  def __init__(self, vocab_file, max_size, use_pt: bool, pt_vocab):
+  def __init__(self, vocab_file, max_size, use_pt: bool = False, pt_vocab = None):
     """
     Vocab constructor.
 
