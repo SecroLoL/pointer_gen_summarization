@@ -24,7 +24,7 @@ from training_ptr_gen.eval import Evaluate
 
 use_cuda = config.use_gpu and torch.cuda.is_available()
 
-class Train(object):
+class Trainer(object):
     def __init__(self, custom_vocab_path: str = "", charlm_forward_file: str = "", charlm_backward_file: str = ""):
         """
         Constructor for a training job object
@@ -184,7 +184,7 @@ class Train(object):
         self.optimizer.step()
         return loss.item()
 
-    def trainIters(self, n_iters: int, model_file_path: str = None, SAVE_EVERY: int = 5000, loss_graph_path: str = None):
+    def train(self, n_iters: int, model_file_path: str = None, SAVE_EVERY: int = 5000, loss_graph_path: str = None):
         """
         Trains model for `n_iters`, loading model from `model_file_path` if provided.
 
@@ -195,6 +195,8 @@ class Train(object):
 
         After every `SAVE_EVERY` iterations, the model params will be saved.
 
+        If provided, the loss graph will be saved to `loss_graph_path`. the plot is a simple matplotlib plot of the running average loss
+        across the number of iterations.
         """
         # Validate the model path
         if model_file_path is not None and not os.path.exists(model_file_path):
@@ -221,8 +223,7 @@ class Train(object):
                 self.summary_writer.flush()
             print_interval = 1000
             if iter % print_interval == 0:
-                print('steps %d, seconds for %d batch: %.2f , loss: %f' % (iter, print_interval,
-                                                                           time.time() - start, loss))
+                print(f"steps {iter}, seconds for {print_interval} batch: {time.time() - start}, loss: {loss}")
                 start = time.time()
             if iter % SAVE_EVERY == 0:   # save and evaluate model every 5000 iters
                 self.save_model(running_avg_loss, iter)
@@ -269,7 +270,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    train_processor = Train(custom_vocab_path=args.custom_vocab_path,
+    train_processor = Trainer(custom_vocab_path=args.custom_vocab_path,
                             charlm_forward_file=args.charlm_forward_file,
                             charlm_backward_file=args.charlm_backward_file)
-    train_processor.trainIters(config.max_iterations, args.model_file_path, loss_graph_path=args.loss_graph_path)
+    train_processor.train(config.max_iterations, args.model_file_path, loss_graph_path=args.loss_graph_path)
