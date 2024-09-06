@@ -49,7 +49,9 @@ class Train(object):
         # Load charlm embeddings if provided
         self.charlm_forward_file = charlm_forward_file
         self.charlm_backward_file = charlm_backward_file
-        self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
+        self.use_charlm = False 
+        if self.charlm_forward_file is not None and self.charlm_backward_file is not None:
+            self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
         if self.use_charlm:
             print(f"Using charlm files {charlm_forward_file} and {charlm_backward_file}.")
         if self.use_custom_vocab and self.custom_word_embedding is None or self.custom_word_embedding is not None and not self.custom_word_embedding:
