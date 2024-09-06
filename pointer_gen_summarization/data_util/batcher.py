@@ -64,6 +64,17 @@ class Example(object):
 
 
   def get_dec_inp_targ_seqs(self, sequence, max_len, start_id, stop_id):
+    """
+    Generate input and target sequences for decoder.
+    Args:
+      sequence (list): The input sequence.
+      max_len (int): The maximum length of the sequences.
+      start_id (int): The start token ID.
+      stop_id (int): The stop token ID.
+    Returns:
+      tuple: A tuple containing the input sequence and the target sequence.
+    """
+    
     inp = [start_id] + sequence[:]
     target = sequence[:]
     if len(inp) > max_len: # truncate
@@ -76,6 +87,14 @@ class Example(object):
 
 
   def pad_decoder_inp_targ(self, max_len, pad_id):
+    """
+    Pad the decoder input and target sequences with a specified padding ID up to a maximum length.
+    Parameters:
+      max_len (int): The maximum length of the sequences.
+      pad_id (int): The padding ID to be used for padding.
+    Returns:
+      None
+    """
     while len(self.dec_input) < max_len:
       self.dec_input.append(pad_id)
     while len(self.target) < max_len:
@@ -83,6 +102,15 @@ class Example(object):
 
 
   def pad_encoder_input(self, max_len, pad_id):
+    """
+    Pads the encoder input sequences with a specified pad_id up to a maximum length.
+    Args:
+      max_len (int): The maximum length of the encoder input sequences.
+      pad_id (int): The pad_id used for padding the sequences.
+    Returns:
+      None
+    """
+    
     while len(self.enc_input) < max_len:
       self.enc_input.append(pad_id)
     if config.pointer_gen:
