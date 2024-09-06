@@ -184,7 +184,7 @@ class Train(object):
         self.optimizer.step()
         return loss.item()
 
-    def trainIters(self, n_iters: int, model_file_path: str = None, SAVE_EVERY: int = 5000):
+    def trainIters(self, n_iters: int, model_file_path: str = None, SAVE_EVERY: int = 5000, loss_graph_path: str = None):
         """
         Trains model for `n_iters`, loading model from `model_file_path` if provided.
 
@@ -232,6 +232,8 @@ class Train(object):
         plt.xlabel('Iterations')
         plt.ylabel('Running Average Loss')
         plt.title('Running Average Loss vs Iterations')
+        if loss_graph_path is not None:
+            plt.savefig(loss_graph_path)
         plt.show()
                 
 if __name__ == '__main__':
@@ -259,10 +261,15 @@ if __name__ == '__main__':
                         required=False,
                         default=None,
                         help="Optional custom charlm backward model file.")
+    parser.add_argument("--loss_graph_path",
+                        dest="loss_graph_path",
+                        required=False,
+                        default=None,
+                        help="Optional path to save the loss graph.")
 
     args = parser.parse_args()
     
     train_processor = Train(custom_vocab_path=args.custom_vocab_path,
                             charlm_forward_file=args.charlm_forward_file,
                             charlm_backward_file=args.charlm_backward_file)
-    train_processor.trainIters(config.max_iterations, args.model_file_path)
+    train_processor.trainIters(config.max_iterations, args.model_file_path, loss_graph_path=args.loss_graph_path)
