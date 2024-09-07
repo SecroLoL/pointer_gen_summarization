@@ -17,6 +17,15 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(123)
 
 def init_lstm_wt(lstm):
+    """
+    Initializes the weights and biases of an LSTM module.
+
+    Args:
+        lstm (torch.nn.LSTM): The LSTM module to initialize.
+
+    Returns:
+        None
+    """
     for names in lstm._all_weights:
         for name in names:
             if name.startswith('weight_'):
@@ -31,14 +40,41 @@ def init_lstm_wt(lstm):
                 bias.data[start:end].fill_(1.)
 
 def init_linear_wt(linear):
+    """
+    Initializes the weights of a linear layer using truncated normal distribution.
+
+    Args:
+        linear (torch.nn.Linear): The linear layer to initialize.
+
+    Returns:
+        None
+    """
     linear.weight.data.normal_(std=config.trunc_norm_init_std)
     if linear.bias is not None:
         linear.bias.data.normal_(std=config.trunc_norm_init_std)
 
 def init_wt_normal(wt):
+    """
+    Initializes the weight tensor `wt` with values drawn from a normal distribution.
+
+    Parameters:
+    - wt: The weight tensor to be initialized.
+
+    Returns:
+    None
+    """
     wt.data.normal_(std=config.trunc_norm_init_std)
 
 def init_wt_unif(wt):
+    """
+    Initializes the weight tensor `wt` with values drawn from a uniform distribution.
+
+    Args:
+        wt (torch.Tensor): The weight tensor to be initialized.
+
+    Returns:
+        None
+    """
     wt.data.uniform_(-config.rand_unif_init_mag, config.rand_unif_init_mag)
 
 class Encoder(nn.Module):
@@ -65,12 +101,12 @@ class Encoder(nn.Module):
 
         self.W_h = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2, bias=False)
 
-        print(f"Successfully initialized Encoder. Used custom word embedding? ({custom_word_embedding})\n"
+        print(f"Successfully initialized Encoder.\n" 
+              f"Used custom word embedding? ({custom_word_embedding})\n"
               f"Shape of embedding layer weights: {self.embedding.weight.data.shape}.")
 
     def forward(self, input, seq_lens, truncated_articles):
         """
-        TODO clean this up when finished
         Args:
             input: this is the enc_batch object that gets loaded from the get_input_from_batch() function.
 
@@ -135,9 +171,8 @@ class ReduceState(nn.Module):
         init_linear_wt(self.reduce_c)
 
     def forward(self, hidden):
-        # https://chatgpt.com/share/70dcb9b6-9479-4b7b-a54e-93069a581d27
         # 2 is the bidirectional, batch size is each example, and the hidden dim of the encoder LSTM. 
-        h, c = hidden # h, c dim = 2 x b x hidden_dim  TODO print this out to confirm that this is the case
+        h, c = hidden # h, c dim = 2 x b x hidden_dim  
         h_in = h.transpose(0, 1).contiguous().view(-1, config.hidden_dim * 2)
         hidden_reduced_h = F.relu(self.reduce_h(h_in))
         c_in = c.transpose(0, 1).contiguous().view(-1, config.hidden_dim * 2)
@@ -148,7 +183,7 @@ class ReduceState(nn.Module):
 class Attention(nn.Module):
     def __init__(self):
         super(Attention, self).__init__()
-        # attention
+        # Bahdanau Attention
         if config.is_coverage:
             self.W_c = nn.Linear(1, config.hidden_dim * 2, bias=False)
         self.decode_proj = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2)
@@ -206,12 +241,13 @@ class Decoder(nn.Module):
         if config.pointer_gen:
             self.p_gen_linear = nn.Linear(config.hidden_dim * 4 + config.emb_dim, 1)
 
-        #p_vocab
+        # Two linear layers to pass the decoder state and the context vector to the final output layer
         self.out1 = nn.Linear(config.hidden_dim * 3, config.hidden_dim)
         self.out2 = nn.Linear(config.hidden_dim, config.vocab_size)
         init_linear_wt(self.out2)
 
-        print(f"Successfully initialized Decoder. Used custom word embedding? ({custom_word_embedding}).\n"
+        print(f"Successfully initialized Decoder.\n" 
+              f"Used custom word embedding? ({custom_word_embedding}).\n"
               f"Shape of embedding layer weights: {self.embedding.weight.data.shape}.")
 
     def forward(self, y_t_1, s_t_1, encoder_outputs, encoder_feature, enc_padding_mask,
@@ -246,8 +282,6 @@ class Decoder(nn.Module):
 
         output = torch.cat((lstm_out.view(-1, config.hidden_dim), c_t), 1) # B x hidden_dim * 3
         output = self.out1(output) # B x hidden_dim
-
-        #output = F.relu(output)
 
         output = self.out2(output) # B x vocab_size
         vocab_dist = F.softmax(output, dim=1)
