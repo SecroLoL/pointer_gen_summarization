@@ -7,3 +7,6 @@ dm_stories_tokenized.zip
 .DS_Store
 dataset.zip
 dataset/
+
+__pycache__/  # pycache 
+logs/  # log files
