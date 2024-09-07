@@ -1,15 +1,13 @@
 import os
 
-ROOT_DIR = "/u/nlp/data/cnn_dm_2/"  # where all information is contained
-LOG_ROOT = os.path.join(ROOT_DIR, "dataset/log/")  # where all log data for training jobs will be contained, e.g. model checkpoints, evaluation results, and decoding outputs.
-TRAIN_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/chunked/train_*")  # path to chunked training data
-EVAL_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/chunked/val_*")
-DECODE_DATA_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/test_*")
-VOCAB_PATH = os.path.join(ROOT_DIR, "dataset/finished_files/vocab")  # default vocab path
+ROOT_DIR = os.getenv("PGEN_ROOT_DIR", "/u/nlp/data/cnn_dm_2/")  # where all information is contained
+LOG_ROOT = os.getenv("PGEN_LOG_ROOT", os.path.join(ROOT_DIR, "dataset/log/"))  # where all log data for training jobs will be contained, e.g. model checkpoints, evaluation results, and decoding outputs.
+TRAIN_DATA_PATH = os.getenv("PGEN_TRAIN_DATA_PATH", os.path.join(ROOT_DIR, "dataset/finished_files/chunked/train_*"))  # path to chunked training data
+EVAL_DATA_PATH = os.getenv("PGEN_EVAL_DATA_PATH", os.path.join(ROOT_DIR, "dataset/finished_files/chunked/val_*"))  # path to chunked validation data
+DECODE_DATA_PATH = os.getenv("PGEN_DECODE_DATA_PATH", os.path.join(ROOT_DIR, "dataset/finished_files/test_*"))  # path to chunked test data
+VOCAB_PATH = os.getenv("PGEN_VOCAB_PATH", os.path.join(ROOT_DIR, "dataset/finished_files/vocab"))  # default vocab path
 
-CUSTOM_VOCAB_PATH = "/Users/alexshan/Desktop/pointer_gen_summarization/pointer_gen_summarization/data_util/glove.pt"
-
-# Hyperparameters
+# Train Hyperparameters
 hidden_dim = 256
 emb_dim = 100
 batch_size = 8
