@@ -16,7 +16,24 @@ logger = logging.getLogger(__name__)
 
 
 class Example(object):
-
+  """
+  Attributes:
+    enc_len (int): The length of the processed article after truncation but before padding.
+    enc_input (List[int]): The list of word ids representing the processed article. Out-of-vocabulary (OOV) words are represented by the id for the UNK token.
+    dec_input (List[int]): The input sequence for the decoder.
+    target (List[int]): The target sequence for the decoder.
+    dec_len (int): The length of the decoder input sequence.
+    enc_input_extend_vocab (List[int]): The version of the enc_input where in-article OOVs are represented by their temporary OOV id.
+    article_oovs (List[str]): The in-article OOV words themselves.
+    original_article (str): The original article text.
+    original_abstract (str): The original abstract text.
+    original_abstract_sents (List[str]): The original abstract text, split into sentences. One sentence per list item.
+  Methods:
+    get_dec_inp_targ_seqs(sequence, max_len, start_id, stop_id): Generate input and target sequences for the decoder.
+    pad_decoder_inp_targ(max_len, pad_id): Pad the decoder input and target sequences with a specified padding ID up to a maximum length.
+    pad_encoder_input(max_len, pad_id):
+      Pad the encoder input sequences with a specified pad_id up to a maximum length.
+  """
   def __init__(self, article: str, abstract_sentences: List[str], vocab):
     """
     Constructor for an Example object.
@@ -210,12 +227,14 @@ class Batch(object):
 class Batcher(object):
   """
   A class that handles batching of examples for training or decoding.
+
   Args:
     data_path (str): The path to the data file.
     vocab (Vocab): The vocabulary object.
     mode (str): The mode of operation ('train', 'eval', or 'decode').
     batch_size (int): The batch size.
     single_pass (bool): Whether to read the data file only once.
+  
   Attributes:
     BATCH_QUEUE_MAX (int): The maximum number of batches the batch_queue can hold.
     _data_path (str): The path to the data file.
@@ -232,6 +251,7 @@ class Batcher(object):
     _example_q_threads (list): A list of threads that fill the example queue.
     _batch_q_threads (list): A list of threads that fill the batch queue.
     _watch_thread (Thread): A thread that watches the other threads and restarts them if they're dead.
+  
   Methods:
     next_batch(): Retrieves the next batch from the batch queue.
     fill_example_queue(): Fills the example queue with Examples.
@@ -399,7 +419,6 @@ class Batcher(object):
           new_t.daemon = True
           new_t.start()
 
-
   def text_generator(self, example_generator):
     """
     Generates text data from an example generator.
@@ -421,8 +440,7 @@ class Batcher(object):
       except ValueError:
         logger.error('Failed to get article or abstract from example')
         continue
-      if len(article_text)==0: # See https://github.com/abisee/pointer-generator/issues/1
-        #tf.logging.warning('Found an example with empty article text. Skipping it.')
+      if len(article_text) == 0: # See https://github.com/abisee/pointer-generator/issues/1
         logger.warning('Found an example with empty article text. Skipping it.')
         continue
       else:
