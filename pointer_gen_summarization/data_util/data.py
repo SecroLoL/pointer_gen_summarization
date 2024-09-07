@@ -1,5 +1,3 @@
-#Most of this file is copied form https://github.com/abisee/pointer-generator/blob/master/data.py
-
 import glob
 import random
 import struct
@@ -24,8 +22,29 @@ STOP_DECODING = '[STOP]' # This has a vocab id, which is used at the end of untr
 
 
 class Vocab(object):
+  
+  """
+  Vocab class represents a vocabulary used for word-to-id and id-to-word mappings.
 
-  def __init__(self, vocab_file, max_size, use_pt: bool = False, pt_vocab = None):
+  Attributes:
+    _word_to_id (dict): A dictionary that maps words to their corresponding ids.
+    _id_to_word (dict): A dictionary that maps ids to their corresponding words.
+    _count (int): The total number of words in the vocabulary.
+  Methods:
+    __init__(self, vocab_file, max_size, use_pt: bool = False, pt_vocab = None):
+      Initializes the Vocab object with either a vocabulary file or a PT vocab object.
+    word2id(self, word):
+      Converts a word to its corresponding id.
+    id2word(self, word_id):
+      Converts an id to its corresponding word.
+    size(self):
+      Returns the size of the vocabulary.
+    write_metadata(self, fpath):
+      Writes the word embedding metadata file to the specified file path.
+
+  """
+
+  def __init__(self, vocab_file: str, max_size: int, use_pt: bool = False, pt_vocab = None):
     """
     Vocab constructor.
 
@@ -99,8 +118,21 @@ class Vocab(object):
       for i in range(self.size()):
         writer.writerow({"word": self._id_to_word[i]})
 
+  def __len__(self):
+    return self.size()
 
-def example_generator(data_path, single_pass):
+
+def example_generator(data_path: str, single_pass: bool) -> example_pb2.Example:
+  """
+    This function is a generator that yields examples from data files.
+  Parameters:
+  - data_path (str): The path to the data files.
+  - single_pass (bool): If True, the function will read the data files only once. If False, the function will shuffle the data files and read them repeatedly.
+  Yields:
+  - example_pb2.Example: An example object parsed from the data files.
+  Note:
+  - The function assumes that the data files are in a specific format and can be read using the `example_pb2.Example` protocol buffer.
+  """
   while True:
     filelist = glob.glob(data_path) # get the list of datafiles
     assert filelist, ('Error: Empty filelist at %s' % data_path) # check filelist isn't empty
@@ -121,7 +153,16 @@ def example_generator(data_path, single_pass):
       break
 
 
-def article2ids(article_words, vocab):
+def article2ids(article_words: List[str], vocab: Vocab) -> Tuple[List[int], List[str]]:
+  """
+  Converts a list of article words into a list of corresponding word IDs using the provided vocabulary.
+  Parameters:
+  - article_words (list): A list of words representing an article.
+  - vocab (Vocabulary): An instance of the Vocabulary class.
+  Returns:
+  - ids (list): A list of word IDs corresponding to the article words.
+  - oovs (list): A list of out-of-vocabulary (OOV) words found in the article.
+  """
   ids = []
   oovs = []
   unk_id = vocab.word2id(UNKNOWN_TOKEN)
@@ -137,7 +178,16 @@ def article2ids(article_words, vocab):
   return ids, oovs
 
 
-def abstract2ids(abstract_words, vocab, article_oovs):
+def abstract2ids(abstract_words: List[str], vocab: Vocab, article_oovs: List[str]) -> List[int]:
+  """
+  Convert a list of abstract words to a list of corresponding word ids using the given vocabulary.
+  Args:
+    abstract_words (list): A list of abstract words.
+    vocab (Vocabulary): The vocabulary object containing word-to-id mappings.
+    article_oovs (list): A list of out-of-vocabulary words found in the article.
+  Returns:
+    list: A list of word ids corresponding to the abstract words.
+  """
   ids = []
   unk_id = vocab.word2id(UNKNOWN_TOKEN)
   for w in abstract_words:
@@ -153,7 +203,19 @@ def abstract2ids(abstract_words, vocab, article_oovs):
   return ids
 
 
-def outputids2words(id_list, vocab, article_oovs):
+def outputids2words(id_list: List[int], vocab: Vocab, article_oovs: List[str]) -> List[str]:
+  """
+  Convert a list of word IDs to a list of words using the provided vocabulary and article OOVs.
+  Args:
+    id_list (list): A list of word IDs.
+    vocab (Vocabulary): The vocabulary object containing word-to-ID mappings.
+    article_oovs (list): A list of out-of-vocabulary words in the article.
+  Returns:
+    list: A list of words corresponding to the given word IDs.
+  Raises:
+    ValueError: If the model produces a word ID that isn't in the vocabulary and article_oovs is None.
+    ValueError: If the model produces a word ID that corresponds to an article OOV that doesn't exist in the given article_oovs.
+  """
   words = []
   for i in id_list:
     try:
@@ -169,7 +231,14 @@ def outputids2words(id_list, vocab, article_oovs):
   return words
 
 
-def abstract2sents(abstract):
+def abstract2sents(abstract: str) -> List[str]:
+  """
+  Convert an abstract into a list of sentences.
+  Args:
+    abstract (str): The abstract to be converted.
+  Returns:
+    list: A list of sentences extracted from the abstract.
+  """
   cur = 0
   sents = []
   while True:
@@ -182,27 +251,51 @@ def abstract2sents(abstract):
       return sents
 
 
-def show_art_oovs(article, vocab):
+def show_art_oovs(article: str, vocab: Vocab) -> str:
+  """
+  Show out-of-vocabulary (OOV) words in the given article.
+  Args:
+    article (str): The article text.
+    vocab (Vocabulary): The vocabulary object.
+  Returns:
+    str: The article text with OOV words marked.
+  """
   unk_token = vocab.word2id(UNKNOWN_TOKEN)
   words = article.split(' ')
-  words = [("__%s__" % w) if vocab.word2id(w)==unk_token else w for w in words]
+  words = []
+  for w in words:
+    if vocab.word2id(w) == unk_token:
+      words.append(f"__{w}__")
+    else:
+      words.append(w)
   out_str = ' '.join(words)
   return out_str
 
 
-def show_abs_oovs(abstract, vocab, article_oovs):
+def show_abs_oovs(abstract: str, vocab: Vocab, article_oovs: List[str]) -> str:
+  """
+  Show out-of-vocabulary (OOV) words in the given abstract.
+
+  Args:
+    abstract (str): The abstract text.
+    vocab (Vocab): The vocabulary object.
+    article_oovs (list): A list of out-of-vocabulary words in the article.
+
+  Returns:
+    str: The abstract text with OOV words marked.
+  """
   unk_token = vocab.word2id(UNKNOWN_TOKEN)
   words = abstract.split(' ')
   new_words = []
   for w in words:
-    if vocab.word2id(w) == unk_token: # w is oov
+    if vocab.word2id(w) == unk_token: # w is OOV
       if article_oovs is None: # baseline mode
-        new_words.append("__%s__" % w)
+        new_words.append(f"__{w}__")
       else: # pointer-generator mode
         if w in article_oovs:
-          new_words.append("__%s__" % w)
+          new_words.append(f"__{w}__")
         else:
-          new_words.append("!!__%s__!!" % w)
+          new_words.append(f"!!__{w}__!!")
     else: # w is in-vocab word
       new_words.append(w)
   out_str = ' '.join(new_words)
