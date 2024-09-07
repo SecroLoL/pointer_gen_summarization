@@ -1,4 +1,3 @@
-from torch.autograd import Variable
 import numpy as np
 import torch
 from data_util import config

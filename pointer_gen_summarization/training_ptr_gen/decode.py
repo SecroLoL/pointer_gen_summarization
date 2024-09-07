@@ -8,7 +8,6 @@ import os
 import time
 
 import torch
-from torch.autograd import Variable
 
 from data_util.batcher import Batcher, Batch
 from data_util.data import Vocab, load_custom_vocab
@@ -188,7 +187,7 @@ class BeamSearch(object):
             latest_tokens = [h.latest_token for h in beams]
             latest_tokens = [t if t < self.vocab.size() else self.vocab.word2id(data.UNKNOWN_TOKEN) \
                              for t in latest_tokens]
-            y_t_1 = Variable(torch.LongTensor(latest_tokens))
+            y_t_1 = torch.LongTensor(latest_tokens)
             if use_cuda:
                 y_t_1 = y_t_1.cuda()
             all_state_h =[]

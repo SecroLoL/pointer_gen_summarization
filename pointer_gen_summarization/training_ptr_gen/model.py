@@ -110,7 +110,7 @@ class Encoder(nn.Module):
         Args:
             input: this is the enc_batch object that gets loaded from the get_input_from_batch() function.
 
-            the enc_batch object is defined as enc_batch = Variable(torch.from_numpy(batch.enc_batch).long())
+            the enc_batch object is defined as enc_batch = torch.from_numpy(batch.enc_batch).long()
             for a specific batch.
 
             From batcher.py:
