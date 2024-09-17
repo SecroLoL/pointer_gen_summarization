@@ -76,7 +76,7 @@ class Trainer(object):
         if not os.path.exists(self.model_dir):
             os.mkdir(self.model_dir)
         print(f"Using model_dir {self.model_dir}")
-        self.summary_writer = tf.summary.create_file_writer(train_dir)
+        # self.summary_writer = tf.summary.create_file_writer(train_dir)
 
     def save_model(self, running_avg_loss: float, iter: int):
         """
@@ -215,12 +215,13 @@ class Trainer(object):
         while iter < n_iters:
             batch = self.batcher.next_batch()  # load the next training batch
             loss = self.train_one_batch(batch)
-            running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
+            # running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
+            running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, None, iter)
             loss_history.append(running_avg_loss)  # add the running average loss to the history
             iter += 1
             # Log training progress
-            if iter % 100 == 0:
-                self.summary_writer.flush()
+            # if iter % 100 == 0:
+            #     self.summary_writer.flush()
             print_interval = 1000
             if iter % print_interval == 0:
                 print(f"steps {iter}, seconds for {print_interval} batch: {time.time() - start}, loss: {loss}")
