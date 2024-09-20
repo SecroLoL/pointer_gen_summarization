@@ -44,7 +44,9 @@ class Evaluate(object):
 
         self.charlm_forward_file = charlm_forward_file
         self.charlm_backward_file = charlm_backward_file
-        self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
+        self.use_charlm = False 
+        if self.charlm_forward_file is not None and self.charlm_backward_file is not None:
+            self.use_charlm = os.path.exists(charlm_forward_file) and os.path.exists(charlm_backward_file)
         if self.use_charlm:
             print(f"Using charlm files {charlm_forward_file} and {charlm_backward_file}.")
         
@@ -59,7 +61,7 @@ class Evaluate(object):
             os.mkdir(eval_dir)
 
         print(f"Eval dir {eval_dir}")
-        self.summary_writer = tf.summary.create_file_writer(eval_dir)
+        # self.summary_writer = tf.summary.create_file_writer(eval_dir)
         if self.use_custom_vocab and self.custom_word_embedding is None or self.custom_word_embedding is not None and not self.custom_word_embedding:
             raise ValueError(f"The value of self.use_custom_vocab ({self.use_custom_vocab}) and "
                             f"self.custom_word_embedding ({self.custom_word_embedding}) are incompatible.")
@@ -121,11 +123,12 @@ class Evaluate(object):
             count += 1
             loss = self.eval_one_batch(batch)
 
-            running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
+            # running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
+            running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, None, iter)
             iter += 1
 
-            if iter % 100 == 0:
-                self.summary_writer.flush()
+            # if iter % 100 == 0:
+            #     self.summary_writer.flush()
             print_interval = 1000
             if iter % print_interval == 0:
                 print('steps %d, seconds for %d batch: %.2f , loss: %f' % (
