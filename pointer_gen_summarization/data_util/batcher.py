@@ -313,15 +313,19 @@ class Batcher(object):
     """
     Retrieves the next batch from the batch queue.
     """
-    # If the batch queue is empty, print a warning
-    if self._batch_queue.qsize() == 0:
-      logger.warning('Bucket input queue is empty when calling next_batch. Bucket queue size: %i, Input queue size: %i', self._batch_queue.qsize(), self._example_queue.qsize())
-      if self._single_pass and self._finished_reading:
-        logger.info("Finished reading dataset in single_pass mode.")
-        return None
+    try:
+      # If the batch queue is empty, print a warning
+      if self._batch_queue.qsize() == 0:
+        logger.warning('Bucket input queue is empty when calling next_batch. Bucket queue size: %i, Input queue size: %i', self._batch_queue.qsize(), self._example_queue.qsize())
+        if self._single_pass and self._finished_reading:
+          logger.info("Finished reading dataset in single_pass mode.")
+          return None
 
-    batch = self._batch_queue.get() # get the next Batch
-    return batch
+      batch = self._batch_queue.get() # get the next Batch
+      return batch
+    except Exception as e:
+      print(f"Exception in next_batch: {str(e)}")
+      return None 
 
   def fill_example_queue(self):
     """
@@ -337,7 +341,10 @@ class Batcher(object):
     Returns:
     - None
     """
-    input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass))
+    try:
+      input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass))
+    except Exception as e:
+      print(f'in fill_example_queue: {str(e)}')
 
     while True:
       try:
