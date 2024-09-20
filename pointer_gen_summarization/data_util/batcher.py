@@ -341,14 +341,7 @@ class Batcher(object):
     Returns:
     - None
     """
-    try:
-      input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass))
-    
-    except StopIteration as s:
-      print(f'in fill_example_queue: {str(s)}')
-    except Exception as e:
-      print(f'in fill_example_queue: {str(e)}')
-
+    input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass))
     while True:
       try:
         (article, abstract) = input_gen.__next__() # read the next example from file. article and abstract are both strings.
@@ -445,11 +438,10 @@ class Batcher(object):
     while True:
       try:
         e = example_generator.__next__() # e is a tf.Example
-        if e is None: 
-          print("e is None")
-          raise ValueError("e is None")
       except StopIteration:
         print(f"STOP ITERATION IN TEXT GENERATOR")
+        if self._single_pass:
+          self._finished_reading = True
         raise ValueError("StopIteration")
       try:
         article_text = e.features.feature['article'].bytes_list.value[0] # the article text was saved under the key 'article' in the data files
