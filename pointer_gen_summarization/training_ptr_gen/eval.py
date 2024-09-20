@@ -119,22 +119,29 @@ class Evaluate(object):
         start = time.time()
         batch = self.batcher.next_batch()
         count = 0
-        while batch is not None:
-            count += 1
-            loss = self.eval_one_batch(batch)
+        try:
+            while batch is not None:
+                count += 1
+                loss = self.eval_one_batch(batch)
 
-            # running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
-            running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, None, iter)
-            iter += 1
+                # running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, self.summary_writer, iter)
+                running_avg_loss = calc_running_avg_loss(loss, running_avg_loss, None, iter)
+                iter += 1
 
-            # if iter % 100 == 0:
-            #     self.summary_writer.flush()
-            print_interval = 1000
-            if iter % print_interval == 0:
-                print('steps %d, seconds for %d batch: %.2f , loss: %f' % (
-                iter, print_interval, time.time() - start, running_avg_loss))
-                start = time.time()
-            batch = self.batcher.next_batch()
+                # if iter % 100 == 0:
+                #     self.summary_writer.flush()
+                print_interval = 1000
+                if iter % print_interval == 0:
+                    print('steps %d, seconds for %d batch: %.2f , loss: %f' % (
+                    iter, print_interval, time.time() - start, running_avg_loss))
+                    start = time.time()
+                batch = self.batcher.next_batch()
+        except RuntimeError as e:
+            if str(e) == "generator raised StopIteration":
+                print(f"Generator finished running eval on {count} batches.")
+                return running_avg_loss
+            else:
+                raise e
         
         print(f"Finished running eval on {count} batches.")
         return running_avg_loss
