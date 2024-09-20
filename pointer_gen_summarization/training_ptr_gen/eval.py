@@ -136,13 +136,17 @@ class Evaluate(object):
                     iter, print_interval, time.time() - start, running_avg_loss))
                     start = time.time()
                 batch = self.batcher.next_batch()
-        except RuntimeError as e:
+        except StopIteration as e:
             # if str(e) == "generator raised StopIteration":
             #     print(f"Generator finished running eval on {count} batches.")
             #     return running_avg_loss
             # else:
             #     raise e
             print(f"Generator finished running eval on {count} batches.")
+            return running_avg_loss
+        except Exception as e:
+            print(f"Error occurred: {e}")
+            print(f"Finished running eval on {count} batches.")
             return running_avg_loss
         
         print(f"Finished running eval on {count} batches.")
