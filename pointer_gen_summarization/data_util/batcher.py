@@ -441,6 +441,9 @@ class Batcher(object):
     
     while True:
       e = example_generator.__next__() # e is a tf.Example
+      if e is None: 
+        print("e is None")
+        raise ValueError("e is None")
       try:
         article_text = e.features.feature['article'].bytes_list.value[0] # the article text was saved under the key 'article' in the data files
         abstract_text = e.features.feature['abstract'].bytes_list.value[0] # the abstract text was saved under the key 'abstract' in the data files

@@ -150,7 +150,8 @@ def example_generator(data_path: str, single_pass: bool) -> example_pb2.Example:
         yield example_pb2.Example.FromString(example_str)
     if single_pass:
       print("example_generator completed reading all datafiles. No more data.")
-      break
+      # break
+      return None 
 
 
 def article2ids(article_words: List[str], vocab: Vocab) -> Tuple[List[int], List[str]]:
