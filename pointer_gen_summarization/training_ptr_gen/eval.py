@@ -193,3 +193,4 @@ if __name__ == '__main__':
         charlm_backward_file=charlm_backward
     )
     running_avg_loss = eval_processor.run_eval()
+    print(f"Finished running eval on model {model_filename}. Running average loss: {running_avg_loss}")
