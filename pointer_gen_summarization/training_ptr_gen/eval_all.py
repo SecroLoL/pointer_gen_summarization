@@ -24,7 +24,7 @@ if __name__ == "__main__":
                             custom_vocab_path=args.custom_vocab_path, 
                             charlm_forward_file=args.charlm_forward_file, 
                             charlm_backward_file=args.charlm_backward_file)
-        running_avg_val_loss = evaluator.evaluate()
+        running_avg_val_loss = evaluator.run_eval()
         print(f"Running average validation loss: {running_avg_val_loss}\n{'='*30}")
         if running_avg_val_loss < best_loss:
             best_loss = running_avg_val_loss
