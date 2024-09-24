@@ -31,8 +31,10 @@ class Evaluate(object):
             charlm_backward_file (str): Path to pretrained embeddings for backward charlm
         """
         print(f"Creating evaluator for model in path {model_file_path}")
-        self.use_custom_vocab = os.path.exists(custom_vocab_path)
+        self.use_custom_vocab = False
         self.custom_word_embedding = None  # by default, use standard embeddings
+        if custom_vocab_path is not None:
+            self.use_custom_vocab = os.path.exists(custom_vocab_path)
         if self.use_custom_vocab:
             custom_vocab, custom_emb = load_custom_vocab(vocab_path=custom_vocab_path)
             print(f"Using custom word embeddings taken from path {custom_vocab_path}.")
