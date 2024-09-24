@@ -12,10 +12,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print(f"Models dir: {args.models_dir}")
-
-    paths = [f"{args.models_dir}/{model}" for model in os.listdir(args.models_dir)]
     # every model file is named 'model_step_timestamp', so we should only include models with step >= eval_after
-    paths = [path for path in paths if int(path.split('_')[1]) >= args.eval_after]
+    models = [model for model in os.listdir(args.models_dir) if int(model.split('_')[1]) >= args.eval_after]
+    paths = [f"{args.models_dir}/{model}" for model in models]
     
     best_loss = float('inf')
     best_model = None 
