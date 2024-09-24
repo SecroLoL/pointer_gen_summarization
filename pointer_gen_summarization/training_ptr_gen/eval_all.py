@@ -5,6 +5,7 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate a model on the validation set.")
     parser.add_argument("--models_dir", type=str, help="Path to saved models dir", required=True)
+    parser.add_argument("--eval_after", type=int, help="Evaluate after this many steps", required=False, default=100000)
     parser.add_argument("--custom_vocab_path", type=str, help="Path to custom vocab file", required=False)
     parser.add_argument("--charlm_forward_file", type=str, help="Path to forward charlm file", required=False)
     parser.add_argument("--charlm_backward_file", type=str, help="Path to backward charlm file", required=False)
@@ -13,6 +14,8 @@ if __name__ == "__main__":
     print(f"Models dir: {args.models_dir}")
 
     paths = [f"{args.models_dir}/{model}" for model in os.listdir(args.models_dir)]
+    # every model file is named 'model_step_timestamp', so we should only include models with step >= eval_after
+    paths = [path for path in paths if int(path.split('_')[1]) >= args.eval_after]
     
     best_loss = float('inf')
     best_model = None 
