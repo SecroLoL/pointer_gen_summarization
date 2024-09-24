@@ -18,18 +18,17 @@ if __name__ == "__main__":
     best_model = None 
     for model_file in paths:
         print(f"Model file: {model_file}")
-        
-
         evaluator = Evaluate(model_file_path=model_file, 
                             custom_vocab_path=args.custom_vocab_path, 
                             charlm_forward_file=args.charlm_forward_file, 
                             charlm_backward_file=args.charlm_backward_file)
         running_avg_val_loss = evaluator.evaluate()
-
+        print(f"Running average validation loss: {running_avg_val_loss}\n{'='*30}")
         if running_avg_val_loss < best_loss:
             best_loss = running_avg_val_loss
             best_model = model_file
+            print(f"New best model: {best_model}, loss: {best_loss}\n{'='*30}")
     
     print(f"Best model: {best_model}, loss: {best_loss}")
     print("Done evaluating models.")
-    
+
