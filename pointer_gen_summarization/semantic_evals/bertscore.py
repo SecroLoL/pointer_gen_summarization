@@ -47,8 +47,8 @@ def average_score(scores):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Evaluate BERTScore similarity between texts in two directories.")
-    parser.add_argument('dir1', type=str, help="Directory containing reference summaries.")
-    parser.add_argument('dir2', type=str, help="Directory containing target summaries.")
+    parser.add_argument('--ref_dir', type=str, help="Directory containing reference summaries.")
+    parser.add_argument('--dec_dir', type=str, help="Directory containing decoded summaries.")
     args = parser.parse_args()
 
     scores = evaluate_directories(args.dir1, args.dir2)
