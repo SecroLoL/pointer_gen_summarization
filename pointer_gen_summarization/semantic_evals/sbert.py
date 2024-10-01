@@ -49,6 +49,7 @@ def evaluate_directories(dir1, dir2):
 
     return scores
 
+
 def average_score(scores):
     if not scores:
         return 0.0
