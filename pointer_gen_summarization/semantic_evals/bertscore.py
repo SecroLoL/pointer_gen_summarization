@@ -18,10 +18,11 @@ def evaluate_bertscore(text1, text2):
 def evaluate_directories(dir1, dir2):
     scores = {}
 
-    for filename in os.listdir(dir1):
+    for filename in os.listdir(dir1)[:10]:
         filepath1 = os.path.join(dir1, filename)
-        filepath2 = os.path.join(dir2, filename)
-
+        name = filename.split('_')[0]
+        filepath2 = os.path.join(dir2, f"{name}_reference.txt")
+       
         if os.path.isfile(filepath1) and os.path.isfile(filepath2):
             with open(filepath1, 'r', encoding='utf-8') as file1, open(filepath2, 'r', encoding='utf-8') as file2:
                 text1 = file1.read()
@@ -47,8 +48,8 @@ def average_score(scores):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Evaluate BERTScore similarity between texts in two directories.")
-    parser.add_argument('--generated_dir', type=str, required=True, help="Directory containing generated summaries")
-    parser.add_argument('--reference_dir', type=str, required=True, help="Directory containing reference summaries")
+    parser.add_argument('--gen_dir', type=str, required=True, help="Directory containing generated summaries")
+    parser.add_argument('--ref_dir', type=str, required=True, help="Directory containing reference summaries")
     args = parser.parse_args()
 
     scores = evaluate_directories(args.generated_dir, args.reference_dir)
