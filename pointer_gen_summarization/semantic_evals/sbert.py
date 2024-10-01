@@ -59,11 +59,11 @@ def average_score(scores):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Evaluate SBERT similarity between texts in two directories.")
-    parser.add_argument('dir1', type=str, help="Directory containing reference summaries.")
-    parser.add_argument('dir2', type=str, help="Directory containing target summaries.")
+    parser.add_argument('--generated_dir', type=str, required=True, help="Directory containing generated summaries")
+    parser.add_argument('--reference_dir', type=str, required=True, help="Directory containing reference summaries")
     args = parser.parse_args()
 
-    scores = evaluate_directories(args.dir1, args.dir2)
+    scores = evaluate_directories(args.generated_dir, args.reference_dir)
     avg_score = average_score(scores)
 
     print(f"Average SBERT similarity score: {avg_score:.4f}")
