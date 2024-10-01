@@ -1,8 +1,8 @@
 """
 Runs the semantic eval of decoded model outputs using BERTScore and S-BERT embedding distances.
 """
-from pointer_gen_summarization.semantic_evals.bertscore import evaluate_directories as evaluate_bertscore
-from pointer_gen_summarization.semantic_evals.sbert import evaluate_directories as evaluate_sbert_scores
+from semantic_evals.bertscore import evaluate_directories as evaluate_bertscore
+from semantic_evals.sbert import evaluate_directories as evaluate_sbert_scores
 import argparse 
 
 
