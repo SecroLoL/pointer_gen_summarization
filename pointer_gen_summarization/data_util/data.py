@@ -341,7 +341,7 @@ def load_custom_vocab(vocab_path: str) -> Tuple[Vocab, nn.Embedding]:
   
   emb_matrix = pt.emb  # (vocab size, emb dim)
   # we may need to truncate the embedding matrix if certain words are getting pushed out of the vocab size limits. This will make room for the extra tokens, and ensure that all embeddings are synced to their updated indices in the vocab.
-  emb_matrix = nn.Embedding.from_pretrained(torch.from_numpy(emb_matrix), freeze=True).weight.data[: config.vocab_size-len(EXTRA_TOKENS), :]  # get just the emb matrix weights for the tokens that we will actually be using (truncating to make room for EXTRA tokens if needed)
+  emb_matrix = nn.Embedding.from_pretrained(torch.from_numpy(emb_matrix), freeze=False).weight.data[: config.vocab_size-len(EXTRA_TOKENS), :]  # get just the emb matrix weights for the tokens that we will actually be using (truncating to make room for EXTRA tokens if needed)
   vocab_size, emb_dim = emb_matrix.shape   
   # We need to extend the emb matrix at the front to account for the new tokens in EXTRA_TOKENS
   extra_tokens_tensor = torch.zeros(len(EXTRA_TOKENS), emb_dim)  # embeddings for EXTRA_TOKENS
