@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument('--ref_dir', type=str, required=True, help="Directory containing reference summaries")
     args = parser.parse_args()
 
-    scores = evaluate_directories(args.generated_dir, args.reference_dir)
+    scores = evaluate_directories(args.gen_dir, args.ref_dir)
     avg_score = average_score(scores)
 
     print(f"Average BERTScore similarity score: {avg_score:.4f}")
