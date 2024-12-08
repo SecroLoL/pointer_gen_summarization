@@ -80,76 +80,39 @@ def init_wt_unif(wt):
 class Encoder(nn.Module):
     def __init__(self, custom_word_embedding: nn.Embedding = None, charlm_forward_file: str = None, charlm_backward_file: str = None):
         super(Encoder, self).__init__()
-        input_size = config.emb_dim
-        if custom_word_embedding is not None:
-            self.embedding = custom_word_embedding
-        else:
-            self.embedding = nn.Embedding(config.vocab_size, config.emb_dim)
-        init_wt_normal(self.embedding.weight)
         
-        self.use_charlm = charlm_forward_file is not None and charlm_backward_file is not None
-        if charlm_forward_file is not None:
-            self.charmodel_forward = CharacterLanguageModel.load(charlm_forward_file, finetune=False)
-            input_size += self.charmodel_forward.hidden_dim()
-
-        if charlm_backward_file is not None:
-            self.charmodel_backward = CharacterLanguageModel.load(charlm_backward_file, finetune=False)
-            input_size += self.charmodel_backward.hidden_dim()
+        # Initialize character language models
+        assert charlm_forward_file is not None and charlm_backward_file is not None, "Character language models are required"
+        self.charmodel_forward = CharacterLanguageModel.load(charlm_forward_file, finetune=False)
+        self.charmodel_backward = CharacterLanguageModel.load(charlm_backward_file, finetune=False)
+        
+        input_size = self.charmodel_forward.hidden_dim() + self.charmodel_backward.hidden_dim()
 
         self.lstm = nn.LSTM(input_size, config.hidden_dim, num_layers=1, batch_first=True, bidirectional=True)
         init_lstm_wt(self.lstm)
 
         self.W_h = nn.Linear(config.hidden_dim * 2, config.hidden_dim * 2, bias=False)
 
-        print(f"Successfully initialized Encoder.\n" 
-              f"Used custom word embedding? ({custom_word_embedding})\n"
-              f"Shape of embedding layer weights: {self.embedding.weight.data.shape}.")
+        print(f"Successfully initialized Encoder with character language models only.")
 
     def forward(self, input, seq_lens, truncated_articles):
         """
         Args:
-            input: this is the enc_batch object that gets loaded from the get_input_from_batch() function.
-
-            the enc_batch object is defined as enc_batch = torch.from_numpy(batch.enc_batch).long()
-            for a specific batch.
-
-            From batcher.py:
-            # Note: our enc_batch can have different length (second dimension) for each batch because we use dynamic_rnn for the encoder.
-            # enc_batch is a tensor of shape (B, seq len) that contains the token ID for each token (word)
-            self.enc_batch = np.zeros((self.batch_size, max_enc_seq_len), dtype=np.int32)   
-
-            seq_lens: self.enc_lens = np.zeros((self.batch_size), dtype=np.int32)  # length of each example
-
-            So,
-
-            input is the enc_batch, which is the tensor of shape (Batch size, seq len) containing the token ID for each word
-            seq_lens is the length of each example.
-
+            input: Not used in this version since we only use character embeddings
+            seq_lens: Length of each example
             truncated_articles List[List[str]]: A list of sentences, where each sentence has a list of words
 
-        What needs to be added here is the actual words themselves here so that the embeddings can be concatenated.
-        This should be passed in as raw text. Then, we use the build_char_reps to get the embeddings. Finally, we should 
-        concatenate the embeddings before they are used. The encoder outputs will be size (B, seq len, emb dim + charmodel dim).
-
-        input: [[str]]
-          K sentences, each of length Ki (can be different for each sentence)
-        output: [tensor(Ki x dim)]
-          list of tensors, each one with shape Ki by the dim of the character model
-
-        Values are taken from the last character in a word for each word.
-        The words are effectively treated as if they are whitespace separated
+        The encoder now only uses character-level embeddings from the forward and backward
+        character language models.
         """
-        embedded = self.embedding(input)  # (B, seq len, emb dim)
-        # Get embeddings of the truncated articles and concatenate them to the word embeddings
-        if self.use_charlm:
-            char_reps_forward = self.charmodel_forward.build_char_representation(truncated_articles)  # takes [[str]]
-            char_reps_backward = self.charmodel_backward.build_char_representation(truncated_articles)
+        # Get character embeddings
+        char_reps_forward = self.charmodel_forward.build_char_representation(truncated_articles)
+        char_reps_backward = self.charmodel_backward.build_char_representation(truncated_articles)
 
-            char_reps_forward = pad_sequence(char_reps_forward, batch_first=True)
-            char_reps_backward = pad_sequence(char_reps_backward, batch_first=True)
-            embedded = torch.cat((embedded, char_reps_forward, char_reps_backward), 2)   # shape (B, seq len, emb dim + 2*charlm dim)
+        char_reps_forward = pad_sequence(char_reps_forward, batch_first=True)
+        char_reps_backward = pad_sequence(char_reps_backward, batch_first=True)
+        embedded = torch.cat((char_reps_forward, char_reps_backward), 2)
 
-       
         packed = pack_padded_sequence(embedded, seq_lens, batch_first=True)
         output, hidden = self.lstm(packed)
 
@@ -313,8 +276,6 @@ class Model(object):
         decoder = Decoder(custom_word_embedding=custom_word_embedding)
         reduce_state = ReduceState()
 
-        # shared the embedding between encoder and decoder
-        decoder.embedding.weight = encoder.embedding.weight
         if is_eval:
             encoder = encoder.eval()
             decoder = decoder.eval()
