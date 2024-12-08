@@ -88,6 +88,8 @@ class Encoder(nn.Module):
         
         input_size = self.charmodel_forward.hidden_dim() + self.charmodel_backward.hidden_dim()
 
+        print(f"Input size to LSTM: {input_size}")
+
         self.lstm = nn.LSTM(input_size, config.hidden_dim, num_layers=1, batch_first=True, bidirectional=True)
         init_lstm_wt(self.lstm)
 
