@@ -5,8 +5,14 @@ Integration with Stanza, Stanford NLP's open-source library for many human langu
 
 This code is a Stanza-integrated version of [Atul Kumar's implementation]([url](https://github.com/atulkum/pointer_summarizer)) of the paper [Get To The Point: Summarization with Pointer-Generator Networks]([url](https://arxiv.org/abs/1704.04368)). I have also updated the implementation to work with PyTorch 2.1 and removed many of the deprecated implementation details related to Tensorflow 1.13. 
 
-Stanza: https://github.com/stanfordnlp/stanza
+## Additions ##
+In this repo, you can load custom word embeddings to train the abstractive summarization model. You can also bring your own character language model embeddings from Stanza to this repo!
+Additionally, you can compute the ROUGE scores for the results using the `rouge-score` library instead of the `pyrouge` library implemented in the original paper, which has since changed.
+Finally, we've added the capacity to compute semantic similarity scores (BERTScore and S-BERT embedding cosine similarity) across the generated summaries and reference text.
 
-Atul Kumar's original implementation: https://github.com/atulkum/pointer_summarizer
+## Running the code
+
+
+Stanza: https://github.com/stanfordnlp/stanza
 
 `Get To The Point: Summarization with Pointer-Generator Networks` by See et. al.: https://arxiv.org/abs/1704.04368
